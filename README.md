@@ -72,12 +72,13 @@ git remote add origin git@github.com:YOUR_USER/Paper_Reading.git
 git push -u origin main
 ```
 
-### 2. 开启 Pages
+### 2. 开启 Pages（必做，否则站点 404）
 
-仓库 **Settings → Pages → Build and deployment**：
-
-- **Source:** 选 **GitHub Actions**（不要选 Deploy from a branch）
-- 若 Actions 里 `Deploy GitHub Pages` 失败并提示 “Get Pages site failed”，说明 Pages 尚未启用；工作流已带 `enablement: true`，重新 push 一次通常可自动开启。也可手动在 Settings → Pages 里把 Source 改为 GitHub Actions 后，到 **Actions** 页重新运行工作流。
+1. 等 **Actions** 里 `Deploy to GitHub Pages` 跑绿（会创建 `gh-pages` 分支）。
+2. 打开仓库 **Settings → Pages → Build and deployment**：
+   - **Source:** Deploy from a branch
+   - **Branch:** `gh-pages` / **(root)**
+   - 保存
 
 首次成功部署后等 1–3 分钟，访问：
 
