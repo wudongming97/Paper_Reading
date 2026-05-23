@@ -78,8 +78,13 @@ def build_page(
     links_html = (
         f'<div class="article-links">{"".join(links)}</div>' if links else ""
     )
-    home = f"{base}/" if base else "./"
-    site_css = f"{base}/assets/site.css".replace("//", "/") if base else "../assets/site.css"
+    if base:
+        base = base.rstrip("/")
+        home = f"{base}/"
+        site_css = f"{base}/assets/site.css"
+    else:
+        home = "../../"
+        site_css = "../../assets/site.css"
 
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
