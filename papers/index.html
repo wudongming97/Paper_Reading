@@ -21,17 +21,33 @@
   </header>
   <main>
     <section class="hero">
-      <h1>读过的论文，写下来</h1>
-      <p class="hero-lead">用 Cursor readpaper 生成的中文可视化讲解，按方向分类整理，方便以后回顾。</p>
-      <nav class="cat-nav" aria-label="论文分类">
+      <div class="hero-copy">
+        <p class="hero-kicker">Paper Reading</p>
+        <h1>论文阅读笔记</h1>
+      </div>
+      <div class="hero-panel" aria-label="阅读统计">
+        <div>
+          <span class="hero-number">1</span>
+          <span class="hero-label">篇笔记</span>
+        </div>
+        <div>
+          <span class="hero-number">6</span>
+          <span class="hero-label">个方向</span>
+        </div>
+        <a class="hero-latest" href="LLM/scaling-laws-2001-08361/">
+          <span>最近阅读</span>
+          <strong>Scaling Laws for Neural Language Models</strong>
+        </a>
+      </div>
+    </section>
+    <nav class="cat-nav" aria-label="论文分类">
       <a class="cat-pill has-papers" href="#LLM" data-cat="LLM">LLM <span class="count">1</span></a>
       <a class="cat-pill" href="#Agent" data-cat="Agent">Agent <span class="count">0</span></a>
       <a class="cat-pill" href="#Infra" data-cat="Infra">Infra <span class="count">0</span></a>
       <a class="cat-pill" href="#VLA" data-cat="VLA">VLA <span class="count">0</span></a>
       <a class="cat-pill" href="#WAM" data-cat="WAM">WAM <span class="count">0</span></a>
       <a class="cat-pill" href="#CV" data-cat="CV">CV <span class="count">0</span></a>
-      </nav>
-    </section>
+    </nav>
     <section class="category" id="LLM" data-cat="LLM">
       <div class="category-header">
         <span class="category-badge">LLM</span>
