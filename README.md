@@ -8,6 +8,7 @@
 
 | 方向 | 论文 | 日期 |
 |------|------|------|
+| LLM | [Training Compute-Optimal Large Language Models](https://wudongming97.github.io/Paper_Reading/LLM/compute-optimal-2203-15556/) | 2022-03-29 |
 | LLM | [Scaling Laws for Neural Language Models](https://wudongming97.github.io/Paper_Reading/LLM/scaling-laws-2001-08361/) | 2020-01-23 |
 
 ## 分类
