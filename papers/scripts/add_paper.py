@@ -134,6 +134,7 @@ def write_index(catalog: dict) -> None:
         latest_link = f"""        <a class="hero-latest" href="{escape(p.get("category", "LLM"))}/{escape(p["slug"])}/">
           <span>最近阅读</span>
           <strong>{escape(p["title"])}</strong>
+          <em>{escape(p.get("subtitle", ""))}</em>
         </a>"""
 
     sections = []
@@ -209,15 +210,7 @@ def write_index(catalog: dict) -> None:
         <p class="hero-kicker">Paper Reading</p>
         <h1>论文阅读笔记</h1>
       </div>
-      <div class="hero-panel" aria-label="阅读统计">
-        <div>
-          <span class="hero-number">{total}</span>
-          <span class="hero-label">篇笔记</span>
-        </div>
-        <div>
-          <span class="hero-number">{len(cats)}</span>
-          <span class="hero-label">个方向</span>
-        </div>
+      <div class="hero-panel" aria-label="最近阅读">
 {latest_link}
       </div>
     </section>
