@@ -145,7 +145,7 @@ main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 2rem;
-  align-items: end;
+  align-items: start;
   margin-bottom: 1.25rem;
   padding-bottom: 2rem;
   border-bottom: 1px solid var(--border);
@@ -153,6 +153,7 @@ main {
 
 .hero-copy {
   max-width: 34rem;
+  padding-top: 2rem;
 }
 
 .hero-kicker {
