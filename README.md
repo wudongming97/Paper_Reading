@@ -1,42 +1,32 @@
-# Paper Reading
+# 我的论文阅读记录
 
-仓库只维护 **`papers/`** 目录：每篇 readpaper 讲解一个子文件夹，由 GitHub Pages 发布。
+读过的论文，用 Cursor 的 readpaper 生成中文讲解，放在这里备查。
 
-## 目录结构
+**在线阅读：** https://wudongming97.github.io/Paper_Reading/
 
-```
-papers/
-├── index.html              # 论文列表首页
-├── papers.json             # 目录元数据
-├── assets/site.css         # 共享样式
-├── scripts/add_paper.py    # 入库脚本
-└── <slug>/index.html       # 单篇讲解
-```
+---
 
-## 添加新论文
+## 怎么用
+
+1. 在 Cursor 里对一篇论文跑 readpaper，得到 HTML
+2. 运行（把路径和标题改成你的）：
 
 ```bash
-python3 papers/scripts/add_paper.py path/to/artifact.html \
+python3 papers/scripts/add_paper.py 讲解.html \
   --title "论文标题" \
-  --slug my-paper \
+  --slug 简短英文名 \
   --arxiv "https://arxiv.org/abs/xxxx" \
-  --tldr "一句话摘要"
+  --tldr "一句话总结"
 ```
 
-## 本地预览
+3. `git add . && git commit -m "读：某论文" && git push`
 
-```bash
-cd papers && python3 -m http.server 8080
-# http://localhost:8080/
-# http://localhost:8080/scaling-laws-2001-08361/
-```
+推上去几分钟后，网站上就能看到。
 
-## GitHub Pages
+---
 
-1. Actions 跑绿后，**Settings → Pages** → Branch: `gh-pages` / `(root)`
-2. 访问：https://wudongming97.github.io/Paper_Reading/
+## 文件放哪
 
-**注意：** 部署的是 `papers/` 的内容，URL 不再包含 `/papers/` 前缀：
+所有内容在 `papers/` 里：每篇论文一个文件夹，首页 `papers/index.html` 是目录。
 
-- 首页：`/Paper_Reading/`
-- 讲解：`/Paper_Reading/scaling-laws-2001-08361/`
+本地看一眼：`cd papers && python3 -m http.server 8080`，打开 http://localhost:8080
