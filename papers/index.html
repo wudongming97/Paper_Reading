@@ -3,33 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Paper Reading</title>
+  <meta name="description" content="个人论文阅读记录与 readpaper 中文讲解" />
+  <title>Paper Reading — 论文阅读记录</title>
   <link rel="stylesheet" href="assets/site.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <div class="site-logo">Paper Reading</div>
-      <p class="site-tagline">我的论文阅读记录</p>
+      <div class="site-brand">
+        <span class="site-mark" aria-hidden="true">P</span>
+        <span>
+          <div class="site-logo">Paper Reading</div>
+          <p class="site-tagline">我的论文阅读记录 · 共 1 篇</p>
+        </span>
+      </div>
     </div>
   </header>
   <main>
     <section class="hero">
-      <h1>论文解读</h1>
-      <p>分类：LLM · Agent · Infra · VLA · WAM · CV</p>
+      <h1>读过的论文，写下来</h1>
+      <p class="hero-lead">用 Cursor readpaper 生成的中文可视化讲解，按方向分类整理，方便以后回顾。</p>
+      <nav class="cat-nav" aria-label="论文分类">
+      <a class="cat-pill has-papers" href="#LLM" data-cat="LLM">LLM <span class="count">1</span></a>
+      <a class="cat-pill" href="#Agent" data-cat="Agent">Agent <span class="count">0</span></a>
+      <a class="cat-pill" href="#Infra" data-cat="Infra">Infra <span class="count">0</span></a>
+      <a class="cat-pill" href="#VLA" data-cat="VLA">VLA <span class="count">0</span></a>
+      <a class="cat-pill" href="#WAM" data-cat="WAM">WAM <span class="count">0</span></a>
+      <a class="cat-pill" href="#CV" data-cat="CV">CV <span class="count">0</span></a>
+      </nav>
     </section>
-    <section class="category">
-      <h2>LLM</h2>
+    <section class="category" id="LLM" data-cat="LLM">
+      <div class="category-header">
+        <span class="category-badge">LLM</span>
+        <span class="category-desc">大语言模型</span>
+      </div>
       <ul class="paper-list">
-      <li>
-        <a href="LLM/scaling-laws-2001-08361/">
-          <h3>Scaling Laws for Neural Language Models</h3>
-          <div class="meta">Kaplan et al., OpenAI, 2020 · 2020-01-23</div>
-          <p class="tldr">语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。</p>
-        </a>
-      </li>
+        <li>
+          <a class="paper-card" href="LLM/scaling-laws-2001-08361/">
+            <div class="paper-card-top">
+              <span class="paper-date">2020-01-23</span>
+              <span class="paper-arrow" aria-hidden="true">→</span>
+            </div>
+            <h3>Scaling Laws for Neural Language Models</h3>
+            <p class="meta">Kaplan et al., OpenAI, 2020</p>
+            <p class="tldr">语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。</p>
+          </a>
+        </li>
       </ul>
     </section>
+    <section class="category" id="Agent" data-cat="Agent">
+      <div class="category-header">
+        <span class="category-badge">Agent</span>
+        <span class="category-desc">智能体</span>
+      </div>
+      <p class="category-empty">暂无阅读记录</p>
+    </section>
+    <section class="category" id="Infra" data-cat="Infra">
+      <div class="category-header">
+        <span class="category-badge">Infra</span>
+        <span class="category-desc">训练与推理基础设施</span>
+      </div>
+      <p class="category-empty">暂无阅读记录</p>
+    </section>
+    <section class="category" id="VLA" data-cat="VLA">
+      <div class="category-header">
+        <span class="category-badge">VLA</span>
+        <span class="category-desc">视觉-语言-动作</span>
+      </div>
+      <p class="category-empty">暂无阅读记录</p>
+    </section>
+    <section class="category" id="WAM" data-cat="WAM">
+      <div class="category-header">
+        <span class="category-badge">WAM</span>
+        <span class="category-desc">世界模型 / 动作模型</span>
+      </div>
+      <p class="category-empty">暂无阅读记录</p>
+    </section>
+    <section class="category" id="CV" data-cat="CV">
+      <div class="category-header">
+        <span class="category-badge">CV</span>
+        <span class="category-desc">计算机视觉</span>
+      </div>
+      <p class="category-empty">暂无阅读记录</p>
+    </section>
   </main>
+  <footer class="site-footer">Paper Reading · wudongming</footer>
 </body>
 </html>

@@ -15,6 +15,15 @@ ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = ROOT / "papers.json"
 DEFAULT_CATEGORIES = ["LLM", "Agent", "Infra", "VLA", "WAM", "CV"]
 
+CATEGORY_DESC = {
+    "LLM": "大语言模型",
+    "Agent": "智能体",
+    "Infra": "训练与推理基础设施",
+    "VLA": "视觉-语言-动作",
+    "WAM": "世界模型 / 动作模型",
+    "CV": "计算机视觉",
+}
+
 
 def slugify(text: str) -> str:
     s = text.lower().strip()
@@ -80,7 +89,13 @@ def build_page(*, title: str, fragment: str, arxiv: str, pdf: str) -> str:
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a class="site-logo" href="../../">← Paper Reading</a>
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
     </div>
   </header>
   <main>
@@ -103,38 +118,60 @@ def write_index(catalog: dict) -> None:
             by_cat[cat] = []
         by_cat[cat].append(p)
 
+    pills = []
+    for cat in cats:
+        n = len(by_cat.get(cat, []))
+        cls = "cat-pill has-papers" if n else "cat-pill"
+        pills.append(
+            f'<a class="{cls}" href="#{cat}" data-cat="{escape(cat)}">'
+            f'{escape(cat)} <span class="count">{n}</span></a>'
+        )
+    pills_html = "\n      ".join(pills)
+
     sections = []
     for cat in cats:
         papers = sorted(by_cat.get(cat, []), key=lambda p: p.get("date", ""), reverse=True)
-        if not papers:
-            continue
-        items = []
-        for p in papers:
-            href = f"{cat}/{escape(p['slug'])}/"
-            title = escape(p["title"])
-            subtitle = escape(p.get("subtitle", ""))
-            tldr = escape(p.get("tldr", ""))
-            date_str = escape(p.get("date", ""))
-            sub = f'<div class="meta">{subtitle} · {date_str}</div>' if subtitle or date_str else ""
-            items.append(
-                f"""      <li>
-        <a href="{href}">
-          <h3>{title}</h3>
-          {sub}
-          <p class="tldr">{tldr}</p>
-        </a>
-      </li>"""
-            )
-        sections.append(
-            f"""    <section class="category">
-      <h2>{escape(cat)}</h2>
-      <ul class="paper-list">
+        desc = escape(CATEGORY_DESC.get(cat, ""))
+        if papers:
+            items = []
+            for p in papers:
+                href = f"{cat}/{escape(p['slug'])}/"
+                title = escape(p["title"])
+                subtitle = escape(p.get("subtitle", ""))
+                tldr = escape(p.get("tldr", ""))
+                date_str = escape(p.get("date", ""))
+                meta = f'<p class="meta">{subtitle}</p>' if subtitle else ""
+                items.append(
+                    f"""        <li>
+          <a class="paper-card" href="{href}">
+            <div class="paper-card-top">
+              <span class="paper-date">{date_str}</span>
+              <span class="paper-arrow" aria-hidden="true">→</span>
+            </div>
+            <h3>{title}</h3>
+            {meta}
+            <p class="tldr">{tldr}</p>
+          </a>
+        </li>"""
+                )
+            list_html = f"""      <ul class="paper-list">
 {chr(10).join(items)}
-      </ul>
+      </ul>"""
+        else:
+            list_html = '      <p class="category-empty">暂无阅读记录</p>'
+
+        sections.append(
+            f"""    <section class="category" id="{escape(cat)}" data-cat="{escape(cat)}">
+      <div class="category-header">
+        <span class="category-badge">{escape(cat)}</span>
+        <span class="category-desc">{desc}</span>
+      </div>
+{list_html}
     </section>"""
         )
 
-    body = "\n".join(sections) if sections else '    <p class="empty">暂无论文</p>'
+    body = "\n".join(sections)
+    total = len(catalog.get("papers", []))
 
     ROOT.joinpath("index.html").write_text(
         f"""<!DOCTYPE html>
@@ -142,23 +179,33 @@ def write_index(catalog: dict) -> None:
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Paper Reading</title>
+  <meta name="description" content="个人论文阅读记录与 readpaper 中文讲解" />
+  <title>Paper Reading — 论文阅读记录</title>
   <link rel="stylesheet" href="assets/site.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <div class="site-logo">Paper Reading</div>
-      <p class="site-tagline">我的论文阅读记录</p>
+      <div class="site-brand">
+        <span class="site-mark" aria-hidden="true">P</span>
+        <span>
+          <div class="site-logo">Paper Reading</div>
+          <p class="site-tagline">我的论文阅读记录 · 共 {total} 篇</p>
+        </span>
+      </div>
     </div>
   </header>
   <main>
     <section class="hero">
-      <h1>论文解读</h1>
-      <p>分类：LLM · Agent · Infra · VLA · WAM · CV</p>
+      <h1>读过的论文，写下来</h1>
+      <p class="hero-lead">用 Cursor readpaper 生成的中文可视化讲解，按方向分类整理，方便以后回顾。</p>
+      <nav class="cat-nav" aria-label="论文分类">
+      {pills_html}
+      </nav>
     </section>
 {body}
   </main>
+  <footer class="site-footer">Paper Reading · wudongming</footer>
 </body>
 </html>
 """,
