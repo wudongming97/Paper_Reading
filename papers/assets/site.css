@@ -43,10 +43,6 @@ a:hover {
   max-width: 1080px;
   margin: 0 auto;
   padding: 1.25rem 1.5rem;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
 }
 
 .site-logo {
@@ -56,23 +52,10 @@ a:hover {
   letter-spacing: -0.02em;
 }
 
-.site-logo:hover {
-  text-decoration: none;
-}
-
 .site-tagline {
   margin: 0.2rem 0 0;
   font-size: 0.9rem;
   color: var(--muted);
-}
-
-.site-nav a {
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-
-.site-nav a:hover {
-  color: var(--accent);
 }
 
 main {
@@ -94,91 +77,47 @@ main {
   color: var(--muted);
 }
 
-.paper-grid {
+.paper-list {
+  list-style: none;
+  padding: 0;
+  margin: 2rem 0 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
-  margin-top: 2rem;
 }
 
-.paper-card {
+.paper-list a {
+  display: block;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem 1.35rem;
   box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  color: inherit;
 }
 
-.paper-card:hover {
+.paper-list a:hover {
   border-color: #d4d0e8;
   box-shadow: 0 4px 14px rgba(91, 75, 159, 0.08);
   text-decoration: none;
 }
 
-.paper-card h2 {
-  margin: 0;
+.paper-list h2 {
+  margin: 0 0 0.35rem;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text);
-  line-height: 1.35;
 }
 
-.paper-card .meta {
+.paper-list .meta {
   font-size: 0.82rem;
   color: var(--muted);
 }
 
-.paper-card .tldr {
-  margin: 0;
+.paper-list .tldr {
+  margin: 0.5rem 0 0;
   font-size: 0.92rem;
   color: var(--muted);
-  flex: 1;
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.tag {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.empty-state {
-  margin-top: 2rem;
-  padding: 2rem;
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--muted);
-}
-
-.empty-state code {
-  font-size: 0.88em;
-  background: var(--bg);
-  padding: 0.15rem 0.4rem;
-  border-radius: 6px;
-}
-
-.site-footer {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 0 1.5rem 2rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* Article wrapper: readpaper content lives inside .readpaper-body */
 .readpaper-body {
   font-family: var(--font);
   max-width: 860px;

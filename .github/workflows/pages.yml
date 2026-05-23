@@ -1,4 +1,4 @@
-# 部署到 gh-pages 分支；需在仓库 Settings → Pages 选择该分支（见 README）
+# 只发布 papers/ 目录到 gh-pages
 name: Deploy to GitHub Pages
 
 on:
@@ -16,11 +16,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy to gh-pages branch
+      - name: Deploy papers/ to gh-pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
-          publish_dir: .
+          publish_dir: papers
           exclude_assets: .github
           force_orphan: true

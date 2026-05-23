@@ -1,0 +1,14 @@
+{
+  "papers": [
+    {
+      "slug": "scaling-laws-2001-08361",
+      "title": "Scaling Laws for Neural Language Models",
+      "subtitle": "Kaplan et al., OpenAI, 2020",
+      "date": "2020-01-23",
+      "tags": ["nlp", "scaling", "large-language-models"],
+      "arxiv": "https://arxiv.org/abs/2001.08361",
+      "pdf": "https://arxiv.org/pdf/2001.08361",
+      "tldr": "语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。"
+    }
+  ]
+}
