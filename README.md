@@ -76,9 +76,10 @@ git push -u origin main
 
 仓库 **Settings → Pages → Build and deployment**：
 
-- **Source:** GitHub Actions（工作流已配置，无需 Jekyll）
+- **Source:** 选 **GitHub Actions**（不要选 Deploy from a branch）
+- 若 Actions 里 `Deploy GitHub Pages` 失败并提示 “Get Pages site failed”，说明 Pages 尚未启用；工作流已带 `enablement: true`，重新 push 一次通常可自动开启。也可手动在 Settings → Pages 里把 Source 改为 GitHub Actions 后，到 **Actions** 页重新运行工作流。
 
-首次 push 后等几分钟，访问：
+首次成功部署后等 1–3 分钟，访问：
 
 - 用户站：`https://YOUR_USER.github.io/`（仅当仓库名为 `YOUR_USER.github.io`）
 - **项目站（推荐）：** `https://YOUR_USER.github.io/Paper_Reading/`
