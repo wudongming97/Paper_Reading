@@ -121,26 +121,50 @@ def write_index(catalog: dict) -> None:
     pills = []
     for cat in cats:
         n = len(by_cat.get(cat, []))
-        cls = "cat-pill has-papers" if n else "cat-pill"
-        pills.append(
-            f'<a class="{cls}" href="#{cat}" data-cat="{escape(cat)}">'
-            f'{escape(cat)} <span class="count">{n}</span></a>'
-        )
+        if n:
+            pills.append(
+                f'<a class="cat-pill has-papers" href="#{cat}" data-cat="{escape(cat)}">'
+                f'{escape(cat)} <span class="count">{n}</span></a>'
+            )
+        else:
+            pills.append(
+                f'<span class="cat-pill" data-cat="{escape(cat)}">'
+                f'{escape(cat)} <span class="count">{n}</span></span>'
+            )
     pills_html = "\n      ".join(pills)
     latest = sorted(catalog.get("papers", []), key=lambda p: p.get("date", ""), reverse=True)
-    latest_link = ""
+    latest_link = """      <div class="featured-paper empty-feature">
+        <span>还没有阅读记录</span>
+      </div>"""
     if latest:
         p = latest[0]
-        latest_link = f"""        <a class="hero-latest" href="{escape(p.get("category", "LLM"))}/{escape(p["slug"])}/">
+        latest_link = f"""      <a class="featured-paper" href="{escape(p.get("category", "LLM"))}/{escape(p["slug"])}/" aria-label="最近阅读 {escape(p["title"])}">
+        <div class="feature-top">
           <span>最近阅读</span>
-          <strong>{escape(p["title"])}</strong>
-          <em>{escape(p.get("subtitle", ""))}</em>
-        </a>"""
+          <span class="feature-cat">{escape(p.get("category", "LLM"))}</span>
+        </div>
+        <h2>{escape(p["title"])}</h2>
+        <p>{escape(p.get("subtitle", ""))}</p>
+        <div class="mini-chart" aria-hidden="true">
+          <span class="axis y"></span>
+          <span class="axis x"></span>
+          <span class="curve"></span>
+          <span class="dot d1"></span>
+          <span class="dot d2"></span>
+          <span class="dot d3"></span>
+        </div>
+        <strong class="feature-action">阅读全文</strong>
+      </a>"""
 
     sections = []
+    upcoming = []
     for cat in cats:
         papers = sorted(by_cat.get(cat, []), key=lambda p: p.get("date", ""), reverse=True)
         desc = escape(CATEGORY_DESC.get(cat, ""))
+        if not papers:
+            upcoming.append(f"        <span>{escape(cat)} · {desc}</span>")
+            continue
+
         if papers:
             items = []
             for p in papers:
@@ -166,20 +190,29 @@ def write_index(catalog: dict) -> None:
             list_html = f"""      <ul class="paper-list">
 {chr(10).join(items)}
       </ul>"""
-        else:
-            list_html = '      <p class="category-empty">暂无阅读记录</p>'
 
         sections.append(
-            f"""    <section class="category" id="{escape(cat)}" data-cat="{escape(cat)}">
-      <div class="category-header">
+            f"""    <section class="library" id="{escape(cat)}" data-cat="{escape(cat)}">
+      <div class="section-heading">
         <span class="category-badge">{escape(cat)}</span>
-        <span class="category-desc">{desc}</span>
+        <div>
+          <h2>论文列表</h2>
+          <p>当前先从{desc}开始。</p>
+        </div>
       </div>
 {list_html}
     </section>"""
         )
 
     body = "\n".join(sections)
+    upcoming_html = ""
+    if upcoming:
+        upcoming_html = f"""    <section class="upcoming" aria-label="待补方向">
+      <h2>待补方向</h2>
+      <div class="upcoming-list">
+{chr(10).join(upcoming)}
+      </div>
+    </section>"""
     total = len(catalog.get("papers", []))
 
     ROOT.joinpath("index.html").write_text(
@@ -207,17 +240,17 @@ def write_index(catalog: dict) -> None:
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">Paper Reading</p>
+        <p class="hero-kicker">Research Reading Log</p>
         <h1>论文阅读笔记</h1>
+        <p class="hero-lead">把值得反复看的论文拆成中文讲解、结构图和结果速览。这里是一个面向回看的私人索引，不追求堆量，只保留真正想重新打开的内容。</p>
       </div>
-      <div class="hero-panel" aria-label="最近阅读">
 {latest_link}
-      </div>
     </section>
     <nav class="cat-nav" aria-label="论文分类">
       {pills_html}
     </nav>
 {body}
+{upcoming_html}
   </main>
   <footer class="site-footer">Paper Reading · wudongming</footer>
 </body>

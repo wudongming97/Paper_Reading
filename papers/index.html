@@ -22,29 +22,43 @@
   <main>
     <section class="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">Paper Reading</p>
+        <p class="hero-kicker">Research Reading Log</p>
         <h1>论文阅读笔记</h1>
+        <p class="hero-lead">把值得反复看的论文拆成中文讲解、结构图和结果速览。这里是一个面向回看的私人索引，不追求堆量，只保留真正想重新打开的内容。</p>
       </div>
-      <div class="hero-panel" aria-label="最近阅读">
-        <a class="hero-latest" href="LLM/scaling-laws-2001-08361/">
+      <a class="featured-paper" href="LLM/scaling-laws-2001-08361/" aria-label="最近阅读 Scaling Laws for Neural Language Models">
+        <div class="feature-top">
           <span>最近阅读</span>
-          <strong>Scaling Laws for Neural Language Models</strong>
-          <em>Kaplan et al., OpenAI, 2020</em>
-        </a>
-      </div>
+          <span class="feature-cat">LLM</span>
+        </div>
+        <h2>Scaling Laws for Neural Language Models</h2>
+        <p>Kaplan et al., OpenAI, 2020</p>
+        <div class="mini-chart" aria-hidden="true">
+          <span class="axis y"></span>
+          <span class="axis x"></span>
+          <span class="curve"></span>
+          <span class="dot d1"></span>
+          <span class="dot d2"></span>
+          <span class="dot d3"></span>
+        </div>
+        <strong class="feature-action">阅读全文</strong>
+      </a>
     </section>
     <nav class="cat-nav" aria-label="论文分类">
       <a class="cat-pill has-papers" href="#LLM" data-cat="LLM">LLM <span class="count">1</span></a>
-      <a class="cat-pill" href="#Agent" data-cat="Agent">Agent <span class="count">0</span></a>
-      <a class="cat-pill" href="#Infra" data-cat="Infra">Infra <span class="count">0</span></a>
-      <a class="cat-pill" href="#VLA" data-cat="VLA">VLA <span class="count">0</span></a>
-      <a class="cat-pill" href="#WAM" data-cat="WAM">WAM <span class="count">0</span></a>
-      <a class="cat-pill" href="#CV" data-cat="CV">CV <span class="count">0</span></a>
+      <span class="cat-pill" data-cat="Agent">Agent <span class="count">0</span></span>
+      <span class="cat-pill" data-cat="Infra">Infra <span class="count">0</span></span>
+      <span class="cat-pill" data-cat="VLA">VLA <span class="count">0</span></span>
+      <span class="cat-pill" data-cat="WAM">WAM <span class="count">0</span></span>
+      <span class="cat-pill" data-cat="CV">CV <span class="count">0</span></span>
     </nav>
-    <section class="category" id="LLM" data-cat="LLM">
-      <div class="category-header">
+    <section class="library" id="LLM" data-cat="LLM">
+      <div class="section-heading">
         <span class="category-badge">LLM</span>
-        <span class="category-desc">大语言模型</span>
+        <div>
+          <h2>论文列表</h2>
+          <p>当前先从大语言模型的 scaling law 开始。</p>
+        </div>
       </div>
       <ul class="paper-list">
         <li>
@@ -60,40 +74,15 @@
         </li>
       </ul>
     </section>
-    <section class="category" id="Agent" data-cat="Agent">
-      <div class="category-header">
-        <span class="category-badge">Agent</span>
-        <span class="category-desc">智能体</span>
+    <section class="upcoming" aria-label="待补方向">
+      <h2>待补方向</h2>
+      <div class="upcoming-list">
+        <span>Agent · 智能体</span>
+        <span>Infra · 训练与推理基础设施</span>
+        <span>VLA · 视觉-语言-动作</span>
+        <span>WAM · 世界模型 / 动作模型</span>
+        <span>CV · 计算机视觉</span>
       </div>
-      <p class="category-empty">暂无阅读记录</p>
-    </section>
-    <section class="category" id="Infra" data-cat="Infra">
-      <div class="category-header">
-        <span class="category-badge">Infra</span>
-        <span class="category-desc">训练与推理基础设施</span>
-      </div>
-      <p class="category-empty">暂无阅读记录</p>
-    </section>
-    <section class="category" id="VLA" data-cat="VLA">
-      <div class="category-header">
-        <span class="category-badge">VLA</span>
-        <span class="category-desc">视觉-语言-动作</span>
-      </div>
-      <p class="category-empty">暂无阅读记录</p>
-    </section>
-    <section class="category" id="WAM" data-cat="WAM">
-      <div class="category-header">
-        <span class="category-badge">WAM</span>
-        <span class="category-desc">世界模型 / 动作模型</span>
-      </div>
-      <p class="category-empty">暂无阅读记录</p>
-    </section>
-    <section class="category" id="CV" data-cat="CV">
-      <div class="category-header">
-        <span class="category-badge">CV</span>
-        <span class="category-desc">计算机视觉</span>
-      </div>
-      <p class="category-empty">暂无阅读记录</p>
     </section>
   </main>
   <footer class="site-footer">Paper Reading · wudongming</footer>
