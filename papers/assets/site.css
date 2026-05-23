@@ -77,6 +77,28 @@ main {
   color: var(--muted);
 }
 
+.category {
+  margin-top: 2.5rem;
+}
+
+.category > h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.category .paper-list h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.empty {
+  color: var(--muted);
+}
+
 .paper-list {
   list-style: none;
   padding: 0;

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add a readpaper HTML artifact under papers/<slug>/."""
+"""Add a readpaper HTML artifact under papers/<category>/<slug>/."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = ROOT / "papers.json"
+DEFAULT_CATEGORIES = ["LLM", "Agent", "Infra", "VLA", "WAM", "CV"]
 
 
 def slugify(text: str) -> str:
@@ -54,6 +55,10 @@ def save_json(path: Path, data: dict) -> None:
     )
 
 
+def categories(catalog: dict) -> list[str]:
+    return catalog.get("categories") or DEFAULT_CATEGORIES
+
+
 def build_page(*, title: str, fragment: str, arxiv: str, pdf: str) -> str:
     links = []
     if arxiv:
@@ -70,12 +75,12 @@ def build_page(*, title: str, fragment: str, arxiv: str, pdf: str) -> str:
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{escape(title)} — Paper Reading</title>
-  <link rel="stylesheet" href="../assets/site.css" />
+  <link rel="stylesheet" href="../../assets/site.css" />
 </head>
 <body>
   <header class="site-header">
     <div class="site-header-inner">
-      <a class="site-logo" href="../">← Paper Reading</a>
+      <a class="site-logo" href="../../">← Paper Reading</a>
     </div>
   </header>
   <main>
@@ -90,29 +95,46 @@ def build_page(*, title: str, fragment: str, arxiv: str, pdf: str) -> str:
 
 
 def write_index(catalog: dict) -> None:
-    papers = sorted(
-        catalog.get("papers", []),
-        key=lambda p: p.get("date", ""),
-        reverse=True,
-    )
-    items = []
-    for p in papers:
-        slug = escape(p["slug"])
-        title = escape(p["title"])
-        subtitle = escape(p.get("subtitle", ""))
-        tldr = escape(p.get("tldr", ""))
-        date_str = escape(p.get("date", ""))
-        sub = f'<div class="meta">{subtitle} · {date_str}</div>' if subtitle or date_str else ""
-        items.append(
-            f"""    <li>
-      <a href="{slug}/">
-        <h2>{title}</h2>
-        {sub}
-        <p class="tldr">{tldr}</p>
-      </a>
-    </li>"""
+    cats = categories(catalog)
+    by_cat: dict[str, list[dict]] = {c: [] for c in cats}
+    for p in catalog.get("papers", []):
+        cat = p.get("category", "LLM")
+        if cat not in by_cat:
+            by_cat[cat] = []
+        by_cat[cat].append(p)
+
+    sections = []
+    for cat in cats:
+        papers = sorted(by_cat.get(cat, []), key=lambda p: p.get("date", ""), reverse=True)
+        if not papers:
+            continue
+        items = []
+        for p in papers:
+            href = f"{cat}/{escape(p['slug'])}/"
+            title = escape(p["title"])
+            subtitle = escape(p.get("subtitle", ""))
+            tldr = escape(p.get("tldr", ""))
+            date_str = escape(p.get("date", ""))
+            sub = f'<div class="meta">{subtitle} · {date_str}</div>' if subtitle or date_str else ""
+            items.append(
+                f"""      <li>
+        <a href="{href}">
+          <h3>{title}</h3>
+          {sub}
+          <p class="tldr">{tldr}</p>
+        </a>
+      </li>"""
+            )
+        sections.append(
+            f"""    <section class="category">
+      <h2>{escape(cat)}</h2>
+      <ul class="paper-list">
+{chr(10).join(items)}
+      </ul>
+    </section>"""
         )
-    items_html = "\n".join(items) if items else "    <li><p>暂无论文</p></li>"
+
+    body = "\n".join(sections) if sections else '    <p class="empty">暂无论文</p>'
 
     ROOT.joinpath("index.html").write_text(
         f"""<!DOCTYPE html>
@@ -127,17 +149,15 @@ def write_index(catalog: dict) -> None:
   <header class="site-header">
     <div class="site-header-inner">
       <div class="site-logo">Paper Reading</div>
-      <p class="site-tagline">readpaper 生成的可视化论文解读</p>
+      <p class="site-tagline">我的论文阅读记录</p>
     </div>
   </header>
   <main>
     <section class="hero">
       <h1>论文解读</h1>
-      <p>每篇论文一个子目录，由 readpaper 生成 HTML 后收录于此。</p>
+      <p>分类：LLM · Agent · Infra · VLA · WAM · CV</p>
     </section>
-    <ul class="paper-list">
-{items_html}
-    </ul>
+{body}
   </main>
 </body>
 </html>
@@ -149,6 +169,7 @@ def write_index(catalog: dict) -> None:
 def upsert_catalog(
     catalog: dict,
     *,
+    category: str,
     slug: str,
     title: str,
     subtitle: str,
@@ -158,8 +179,11 @@ def upsert_catalog(
     pdf: str,
     tldr: str,
 ) -> None:
+    if "categories" not in catalog:
+        catalog["categories"] = DEFAULT_CATEGORIES
     papers = catalog.setdefault("papers", [])
     entry = {
+        "category": category,
         "slug": slug,
         "title": title,
         "subtitle": subtitle,
@@ -170,15 +194,16 @@ def upsert_catalog(
         "tldr": tldr,
     }
     for i, p in enumerate(papers):
-        if p.get("slug") == slug:
+        if p.get("slug") == slug and p.get("category") == category:
             papers[i] = {**p, **entry}
             return
     papers.append(entry)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Add readpaper HTML to papers/.")
+    parser = argparse.ArgumentParser(description="Add readpaper HTML to papers/<category>/<slug>/.")
     parser.add_argument("html_file", type=Path)
+    parser.add_argument("--category", required=True, choices=DEFAULT_CATEGORIES)
     parser.add_argument("--title", required=True)
     parser.add_argument("--slug", help="URL slug (default: from title)")
     parser.add_argument("--subtitle", default="")
@@ -196,7 +221,7 @@ def main() -> int:
         return 1
 
     slug = args.slug or slugify(args.title)
-    dest_dir = ROOT / slug
+    dest_dir = ROOT / args.category / slug
     dest_file = dest_dir / "index.html"
 
     if dest_file.exists() and not args.force:
@@ -219,6 +244,7 @@ def main() -> int:
     tags = [t.strip() for t in args.tags.split(",") if t.strip()]
     upsert_catalog(
         catalog,
+        category=args.category,
         slug=slug,
         title=args.title,
         subtitle=args.subtitle,
@@ -233,7 +259,7 @@ def main() -> int:
 
     print(f"Wrote {dest_file}")
     print(f"Updated {CATALOG_PATH} and index.html")
-    print(f"Preview: cd papers && python3 -m http.server 8080")
+    print(f"URL path: {args.category}/{slug}/")
     return 0
 
 

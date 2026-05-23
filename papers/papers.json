@@ -1,6 +1,8 @@
 {
+  "categories": ["LLM", "Agent", "Infra", "VLA", "WAM", "CV"],
   "papers": [
     {
+      "category": "LLM",
       "slug": "scaling-laws-2001-08361",
       "title": "Scaling Laws for Neural Language Models",
       "subtitle": "Kaplan et al., OpenAI, 2020",
