@@ -262,6 +262,10 @@ a {
   overflow: hidden;
 }
 
+.paper-section[hidden] {
+  display: none;
+}
+
 .section-heading {
   display: flex;
   align-items: center;

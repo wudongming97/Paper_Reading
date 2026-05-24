@@ -44,7 +44,7 @@
               <span>Agent</span>
               <strong>0</strong>
             </span>
-            <a class="category-link active" href="#Infra" data-cat="Infra">
+            <a class="category-link" href="#Infra" data-cat="Infra">
               <span>Infra</span>
               <strong>1</strong>
             </a>
@@ -101,7 +101,7 @@
         </li>
         </ol>
       </section>
-      <section class="paper-section" id="Infra" data-cat="Infra">
+      <section class="paper-section" id="Infra" data-cat="Infra" hidden>
       <div class="section-heading">
         <div>
           <p class="eyebrow">Infra</p>
@@ -125,6 +125,36 @@
       </section>
     </section>
   </main>
+  <script>
+    (() => {
+      const links = Array.from(document.querySelectorAll('.category-link[href^="#"]'));
+      const sections = Array.from(document.querySelectorAll('.paper-section'));
+
+      function showCategory(id, updateHash = false) {
+        const target = sections.find((section) => section.id === id);
+        if (!target) return;
+        sections.forEach((section) => {
+          section.hidden = section.id !== id;
+        });
+        links.forEach((link) => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+        if (updateHash) {
+          history.replaceState(null, '', `#${id}`);
+        }
+      }
+
+      links.forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          showCategory(link.getAttribute('href').slice(1), true);
+        });
+      });
+
+      const initial = location.hash.slice(1) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
+      if (initial) showCategory(initial);
+    })();
+  </script>
   <footer class="site-footer">Paper Reading · wudongming</footer>
 </body>
 </html>

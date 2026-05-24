@@ -118,12 +118,14 @@ def write_index(catalog: dict) -> None:
             by_cat[cat] = []
         by_cat[cat].append(p)
 
+    active_cat = next((cat for cat in cats if by_cat.get(cat)), "")
     category_links = []
     for cat in cats:
         n = len(by_cat.get(cat, []))
         if n:
+            cls = "category-link active" if cat == active_cat else "category-link"
             category_links.append(
-                f"""            <a class="category-link active" href="#{escape(cat)}" data-cat="{escape(cat)}">
+                f"""            <a class="{cls}" href="#{escape(cat)}" data-cat="{escape(cat)}">
               <span>{escape(cat)}</span>
               <strong>{n}</strong>
             </a>"""
@@ -187,7 +189,7 @@ def write_index(catalog: dict) -> None:
         </ol>"""
 
         sections.append(
-            f"""      <section class="paper-section" id="{escape(cat)}" data-cat="{escape(cat)}">
+            f"""      <section class="paper-section" id="{escape(cat)}" data-cat="{escape(cat)}"{' hidden' if cat != active_cat else ''}>
       <div class="section-heading">
         <div>
           <p class="eyebrow">{escape(cat)}</p>
@@ -250,6 +252,36 @@ def write_index(catalog: dict) -> None:
 {body}
     </section>
   </main>
+  <script>
+    (() => {{
+      const links = Array.from(document.querySelectorAll('.category-link[href^="#"]'));
+      const sections = Array.from(document.querySelectorAll('.paper-section'));
+
+      function showCategory(id, updateHash = false) {{
+        const target = sections.find((section) => section.id === id);
+        if (!target) return;
+        sections.forEach((section) => {{
+          section.hidden = section.id !== id;
+        }});
+        links.forEach((link) => {{
+          link.classList.toggle('active', link.getAttribute('href') === `#${{id}}`);
+        }});
+        if (updateHash) {{
+          history.replaceState(null, '', `#${{id}}`);
+        }}
+      }}
+
+      links.forEach((link) => {{
+        link.addEventListener('click', (event) => {{
+          event.preventDefault();
+          showCategory(link.getAttribute('href').slice(1), true);
+        }});
+      }});
+
+      const initial = location.hash.slice(1) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
+      if (initial) showCategory(initial);
+    }})();
+  </script>
   <footer class="site-footer">Paper Reading · wudongming</footer>
 </body>
 </html>
