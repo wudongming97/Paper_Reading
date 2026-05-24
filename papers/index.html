@@ -14,86 +14,95 @@
         <span class="site-mark" aria-hidden="true">P</span>
         <span>
           <div class="site-logo">Paper Reading</div>
-          <p class="site-tagline">我的论文阅读记录 · 共 2 篇</p>
+          <p class="site-tagline">中文论文阅读索引 · 2 篇</p>
         </span>
       </div>
     </div>
   </header>
-  <main>
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="hero-kicker">Research Reading Log</p>
-        <h1>论文阅读笔记</h1>
-        <p class="hero-lead">把值得反复看的论文拆成中文讲解、结构图和结果速览。这里是一个面向回看的私人索引，不追求堆量，只保留真正想重新打开的内容。</p>
+  <main class="home-shell">
+    <section class="home-intro">
+      <div>
+        <p class="eyebrow">Research Notes</p>
+        <h1>论文阅读索引</h1>
+        <p class="intro-copy">把论文拆成中文讲解、结构图和结果速览。这里放的是适合回看的阅读笔记，而不是追求数量的收藏夹。</p>
       </div>
-      <a class="featured-paper" href="LLM/compute-optimal-2203-15556/" aria-label="最近阅读 Training Compute-Optimal Large Language Models">
-        <div class="feature-top">
-          <span>最近阅读</span>
-          <span class="feature-cat">LLM</span>
-        </div>
-        <h2>Training Compute-Optimal Large Language Models</h2>
-        <p>Hoffmann et al., DeepMind, 2022</p>
-        <div class="mini-chart" aria-hidden="true">
-          <span class="axis y"></span>
-          <span class="axis x"></span>
-          <span class="curve"></span>
-          <span class="dot d1"></span>
-          <span class="dot d2"></span>
-          <span class="dot d3"></span>
-        </div>
-        <strong class="feature-action">阅读全文</strong>
+      <a class="latest-strip" href="LLM/compute-optimal-2203-15556/">
+        <span>最近阅读</span>
+        <strong>Training Compute-Optimal Large Language Models</strong>
+        <em>Hoffmann et al., DeepMind, 2022</em>
       </a>
     </section>
-    <nav class="cat-nav" aria-label="论文分类">
-      <a class="cat-pill has-papers" href="#LLM" data-cat="LLM">LLM <span class="count">2</span></a>
-      <span class="cat-pill" data-cat="Agent">Agent <span class="count">0</span></span>
-      <span class="cat-pill" data-cat="Infra">Infra <span class="count">0</span></span>
-      <span class="cat-pill" data-cat="VLA">VLA <span class="count">0</span></span>
-      <span class="cat-pill" data-cat="WAM">WAM <span class="count">0</span></span>
-      <span class="cat-pill" data-cat="CV">CV <span class="count">0</span></span>
-    </nav>
-    <section class="library" id="LLM" data-cat="LLM">
-      <div class="section-heading">
-        <span class="category-badge">LLM</span>
-        <div>
-          <h2>论文列表</h2>
-          <p>当前先从大语言模型开始。</p>
+
+    <section class="reading-board" aria-label="论文阅读列表">
+      <aside class="reading-sidebar">
+        <div class="side-block">
+          <h2>分类</h2>
+          <nav class="category-list" aria-label="论文分类">
+            <a class="category-link active" href="#LLM" data-cat="LLM">
+              <span>LLM</span>
+              <strong>2</strong>
+            </a>
+            <span class="category-link" data-cat="Agent">
+              <span>Agent</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="Infra">
+              <span>Infra</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="VLA">
+              <span>VLA</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="WAM">
+              <span>WAM</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="CV">
+              <span>CV</span>
+              <strong>0</strong>
+            </span>
+          </nav>
         </div>
+        <div class="side-block muted">
+          <h2>待补方向</h2>
+          <p>Agent · 智能体、Infra · 训练与推理基础设施、VLA · 视觉-语言-动作、WAM · 世界模型 / 动作模型、CV · 计算机视觉</p>
+        </div>
+      </aside>
+
+      <section class="paper-section" id="LLM" data-cat="LLM">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LLM</p>
+          <h2>大语言模型</h2>
+        </div>
+        <span>2 篇</span>
       </div>
-      <ul class="paper-list">
+        <ol class="paper-list">
         <li>
           <a class="paper-card" href="LLM/compute-optimal-2203-15556/">
-            <div class="paper-card-top">
-              <span class="paper-date">2022-03-29</span>
-              <span class="paper-arrow" aria-hidden="true">→</span>
+            <time datetime="2022-03-29">2022</time>
+            <div class="paper-main">
+              <h3>Training Compute-Optimal Large Language Models</h3>
+              <p class="meta">Hoffmann et al., DeepMind, 2022</p>
+              <p class="tldr">Chinchilla 重新估计算力最优缩放：模型参数和训练 token 应近似等比例增长。</p>
             </div>
-            <h3>Training Compute-Optimal Large Language Models</h3>
-            <p class="meta">Hoffmann et al., DeepMind, 2022</p>
-            <p class="tldr">Chinchilla 重新估计算力最优缩放：模型参数和训练 token 应近似等比例增长。</p>
+            <span class="paper-arrow" aria-hidden="true">→</span>
           </a>
         </li>
         <li>
           <a class="paper-card" href="LLM/scaling-laws-2001-08361/">
-            <div class="paper-card-top">
-              <span class="paper-date">2020-01-23</span>
-              <span class="paper-arrow" aria-hidden="true">→</span>
+            <time datetime="2020-01-23">2020</time>
+            <div class="paper-main">
+              <h3>Scaling Laws for Neural Language Models</h3>
+              <p class="meta">Kaplan et al., OpenAI, 2020</p>
+              <p class="tldr">语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。</p>
             </div>
-            <h3>Scaling Laws for Neural Language Models</h3>
-            <p class="meta">Kaplan et al., OpenAI, 2020</p>
-            <p class="tldr">语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。</p>
+            <span class="paper-arrow" aria-hidden="true">→</span>
           </a>
         </li>
-      </ul>
-    </section>
-    <section class="upcoming" aria-label="待补方向">
-      <h2>待补方向</h2>
-      <div class="upcoming-list">
-        <span>Agent · 智能体</span>
-        <span>Infra · 训练与推理基础设施</span>
-        <span>VLA · 视觉-语言-动作</span>
-        <span>WAM · 世界模型 / 动作模型</span>
-        <span>CV · 计算机视觉</span>
-      </div>
+        </ol>
+      </section>
     </section>
   </main>
   <footer class="site-footer">Paper Reading · wudongming</footer>

@@ -118,51 +118,45 @@ def write_index(catalog: dict) -> None:
             by_cat[cat] = []
         by_cat[cat].append(p)
 
-    pills = []
+    category_links = []
     for cat in cats:
         n = len(by_cat.get(cat, []))
         if n:
-            pills.append(
-                f'<a class="cat-pill has-papers" href="#{cat}" data-cat="{escape(cat)}">'
-                f'{escape(cat)} <span class="count">{n}</span></a>'
+            category_links.append(
+                f"""            <a class="category-link active" href="#{escape(cat)}" data-cat="{escape(cat)}">
+              <span>{escape(cat)}</span>
+              <strong>{n}</strong>
+            </a>"""
             )
         else:
-            pills.append(
-                f'<span class="cat-pill" data-cat="{escape(cat)}">'
-                f'{escape(cat)} <span class="count">{n}</span></span>'
+            category_links.append(
+                f"""            <span class="category-link" data-cat="{escape(cat)}">
+              <span>{escape(cat)}</span>
+              <strong>{n}</strong>
+            </span>"""
             )
-    pills_html = "\n      ".join(pills)
+    category_links_html = "\n".join(category_links)
     latest = sorted(catalog.get("papers", []), key=lambda p: p.get("date", ""), reverse=True)
-    latest_link = """      <div class="featured-paper empty-feature">
-        <span>还没有阅读记录</span>
+    latest_link = """      <div class="latest-strip">
+        <span>最近阅读</span>
+        <strong>还没有阅读记录</strong>
       </div>"""
     if latest:
         p = latest[0]
-        latest_link = f"""      <a class="featured-paper" href="{escape(p.get("category", "LLM"))}/{escape(p["slug"])}/" aria-label="最近阅读 {escape(p["title"])}">
-        <div class="feature-top">
-          <span>最近阅读</span>
-          <span class="feature-cat">{escape(p.get("category", "LLM"))}</span>
-        </div>
-        <h2>{escape(p["title"])}</h2>
-        <p>{escape(p.get("subtitle", ""))}</p>
-        <div class="mini-chart" aria-hidden="true">
-          <span class="axis y"></span>
-          <span class="axis x"></span>
-          <span class="curve"></span>
-          <span class="dot d1"></span>
-          <span class="dot d2"></span>
-          <span class="dot d3"></span>
-        </div>
-        <strong class="feature-action">阅读全文</strong>
+        latest_link = f"""      <a class="latest-strip" href="{escape(p.get("category", "LLM"))}/{escape(p["slug"])}/">
+        <span>最近阅读</span>
+        <strong>{escape(p["title"])}</strong>
+        <em>{escape(p.get("subtitle", ""))}</em>
       </a>"""
 
     sections = []
     upcoming = []
     for cat in cats:
         papers = sorted(by_cat.get(cat, []), key=lambda p: p.get("date", ""), reverse=True)
-        desc = escape(CATEGORY_DESC.get(cat, ""))
+        desc_raw = CATEGORY_DESC.get(cat, "")
+        desc = escape(desc_raw)
         if not papers:
-            upcoming.append(f"        <span>{escape(cat)} · {desc}</span>")
+            upcoming.append(f"{escape(cat)} · {desc}")
             continue
 
         if papers:
@@ -173,46 +167,40 @@ def write_index(catalog: dict) -> None:
                 subtitle = escape(p.get("subtitle", ""))
                 tldr = escape(p.get("tldr", ""))
                 date_str = escape(p.get("date", ""))
+                year = escape(date_str[:4] if date_str else "")
                 meta = f'<p class="meta">{subtitle}</p>' if subtitle else ""
                 items.append(
                     f"""        <li>
           <a class="paper-card" href="{href}">
-            <div class="paper-card-top">
-              <span class="paper-date">{date_str}</span>
-              <span class="paper-arrow" aria-hidden="true">→</span>
+            <time datetime="{date_str}">{year}</time>
+            <div class="paper-main">
+              <h3>{title}</h3>
+              {meta}
+              <p class="tldr">{tldr}</p>
             </div>
-            <h3>{title}</h3>
-            {meta}
-            <p class="tldr">{tldr}</p>
+            <span class="paper-arrow" aria-hidden="true">→</span>
           </a>
         </li>"""
                 )
-            list_html = f"""      <ul class="paper-list">
+            list_html = f"""        <ol class="paper-list">
 {chr(10).join(items)}
-      </ul>"""
+        </ol>"""
 
         sections.append(
-            f"""    <section class="library" id="{escape(cat)}" data-cat="{escape(cat)}">
+            f"""      <section class="paper-section" id="{escape(cat)}" data-cat="{escape(cat)}">
       <div class="section-heading">
-        <span class="category-badge">{escape(cat)}</span>
         <div>
-          <h2>论文列表</h2>
-          <p>当前先从{desc}开始。</p>
+          <p class="eyebrow">{escape(cat)}</p>
+          <h2>{desc}</h2>
         </div>
+        <span>{len(papers)} 篇</span>
       </div>
 {list_html}
-    </section>"""
+      </section>"""
         )
 
     body = "\n".join(sections)
-    upcoming_html = ""
-    if upcoming:
-        upcoming_html = f"""    <section class="upcoming" aria-label="待补方向">
-      <h2>待补方向</h2>
-      <div class="upcoming-list">
-{chr(10).join(upcoming)}
-      </div>
-    </section>"""
+    upcoming_text = "、".join(upcoming) if upcoming else "暂无"
     total = len(catalog.get("papers", []))
 
     ROOT.joinpath("index.html").write_text(
@@ -232,25 +220,37 @@ def write_index(catalog: dict) -> None:
         <span class="site-mark" aria-hidden="true">P</span>
         <span>
           <div class="site-logo">Paper Reading</div>
-          <p class="site-tagline">我的论文阅读记录 · 共 {total} 篇</p>
+          <p class="site-tagline">中文论文阅读索引 · {total} 篇</p>
         </span>
       </div>
     </div>
   </header>
-  <main>
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="hero-kicker">Research Reading Log</p>
-        <h1>论文阅读笔记</h1>
-        <p class="hero-lead">把值得反复看的论文拆成中文讲解、结构图和结果速览。这里是一个面向回看的私人索引，不追求堆量，只保留真正想重新打开的内容。</p>
+  <main class="home-shell">
+    <section class="home-intro">
+      <div>
+        <p class="eyebrow">Research Notes</p>
+        <h1>论文阅读索引</h1>
+        <p class="intro-copy">把论文拆成中文讲解、结构图和结果速览。这里放的是适合回看的阅读笔记，而不是追求数量的收藏夹。</p>
       </div>
 {latest_link}
     </section>
-    <nav class="cat-nav" aria-label="论文分类">
-      {pills_html}
-    </nav>
+
+    <section class="reading-board" aria-label="论文阅读列表">
+      <aside class="reading-sidebar">
+        <div class="side-block">
+          <h2>分类</h2>
+          <nav class="category-list" aria-label="论文分类">
+{category_links_html}
+          </nav>
+        </div>
+        <div class="side-block muted">
+          <h2>待补方向</h2>
+          <p>{upcoming_text}</p>
+        </div>
+      </aside>
+
 {body}
-{upcoming_html}
+    </section>
   </main>
   <footer class="site-footer">Paper Reading · wudongming</footer>
 </body>
