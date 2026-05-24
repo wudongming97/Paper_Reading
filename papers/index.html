@@ -44,10 +44,10 @@
               <span>Agent</span>
               <strong>0</strong>
             </span>
-            <span class="category-link" data-cat="Infra">
+            <a class="category-link active" href="#Infra" data-cat="Infra">
               <span>Infra</span>
-              <strong>0</strong>
-            </span>
+              <strong>1</strong>
+            </a>
             <span class="category-link" data-cat="VLA">
               <span>VLA</span>
               <strong>0</strong>
@@ -64,7 +64,7 @@
         </div>
         <div class="side-block muted">
           <h2>待补方向</h2>
-          <p>Agent · 智能体、Infra · 训练与推理基础设施、VLA · 视觉-语言-动作、WAM · 世界模型 / 动作模型、CV · 计算机视觉</p>
+          <p>Agent · 智能体、VLA · 视觉-语言-动作、WAM · 世界模型 / 动作模型、CV · 计算机视觉</p>
         </div>
       </aside>
 
@@ -95,6 +95,28 @@
               <h3>Scaling Laws for Neural Language Models</h3>
               <p class="meta">Kaplan et al., OpenAI, 2020</p>
               <p class="tldr">语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        </ol>
+      </section>
+      <section class="paper-section" id="Infra" data-cat="Infra">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Infra</p>
+          <h2>训练与推理基础设施</h2>
+        </div>
+        <span>1 篇</span>
+      </div>
+        <ol class="paper-list">
+        <li>
+          <a class="paper-card" href="Infra/sparsely-gated-moe-1701-06538/">
+            <time datetime="2017-01-23">2017</time>
+            <div class="paper-main">
+              <h3>Outrageously Large Neural Networks</h3>
+              <p class="meta">Shazeer et al., Google Brain, 2017</p>
+              <p class="tldr">稀疏门控 MoE 让模型拥有巨大总参数量，但每个输入只激活少数专家。</p>
             </div>
             <span class="paper-arrow" aria-hidden="true">→</span>
           </a>

@@ -22,6 +22,17 @@
       "arxiv": "https://arxiv.org/abs/2203.15556",
       "pdf": "https://arxiv.org/pdf/2203.15556",
       "tldr": "Chinchilla 重新估计算力最优缩放：模型参数和训练 token 应近似等比例增长。"
+    },
+    {
+      "category": "Infra",
+      "slug": "sparsely-gated-moe-1701-06538",
+      "title": "Outrageously Large Neural Networks",
+      "subtitle": "Shazeer et al., Google Brain, 2017",
+      "date": "2017-01-23",
+      "tags": ["moe", "conditional-computation", "sparse-models", "scaling"],
+      "arxiv": "https://arxiv.org/abs/1701.06538",
+      "pdf": "https://arxiv.org/pdf/1701.06538",
+      "tldr": "稀疏门控 MoE 让模型拥有巨大总参数量，但每个输入只激活少数专家。"
     }
   ]
 }
