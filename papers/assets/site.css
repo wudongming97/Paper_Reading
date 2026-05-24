@@ -128,8 +128,8 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
   gap: 2rem;
-  align-items: end;
-  padding: 1.6rem 0 2rem;
+  align-items: center;
+  padding: 1.9rem 0 2rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -143,17 +143,17 @@ a {
 .home-intro h1 {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: clamp(2.7rem, 8vw, 5.2rem);
+  font-size: clamp(3rem, 7.2vw, 5.4rem);
   line-height: 1.02;
   font-weight: 600;
 }
 
 .intro-copy {
-  max-width: 40rem;
-  margin: 1rem 0 0;
+  max-width: 31rem;
+  margin: 0.9rem 0 0;
   color: var(--muted);
-  font-size: 1rem;
-  line-height: 1.8;
+  font-size: 1.02rem;
+  line-height: 1.75;
 }
 
 .latest-strip {

@@ -228,9 +228,8 @@ def write_index(catalog: dict) -> None:
   <main class="home-shell">
     <section class="home-intro">
       <div>
-        <p class="eyebrow">Research Notes</p>
-        <h1>论文阅读索引</h1>
-        <p class="intro-copy">把论文拆成中文讲解、结构图和结果速览。这里放的是适合回看的阅读笔记，而不是追求数量的收藏夹。</p>
+        <h1>论文阅读</h1>
+        <p class="intro-copy">用中文整理重要论文的核心问题、方法脉络和结果判断。少而清晰，方便回看。</p>
       </div>
 {latest_link}
     </section>
