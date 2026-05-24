@@ -220,7 +220,6 @@ def write_index(catalog: dict) -> None:
         <span class="site-mark" aria-hidden="true">P</span>
         <span>
           <div class="site-logo">Paper Reading</div>
-          <p class="site-tagline">中文论文阅读索引 · {total} 篇</p>
         </span>
       </div>
     </div>
