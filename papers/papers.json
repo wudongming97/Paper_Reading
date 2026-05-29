@@ -1,5 +1,12 @@
 {
-  "categories": ["LLM", "Agent", "Infra", "VLA", "WAM", "CV"],
+  "categories": [
+    "LLM",
+    "Agent",
+    "Infra",
+    "VLA",
+    "WAM",
+    "CV"
+  ],
   "papers": [
     {
       "category": "LLM",
@@ -7,7 +14,11 @@
       "title": "Scaling Laws for Neural Language Models",
       "subtitle": "Kaplan et al., OpenAI, 2020",
       "date": "2020-01-23",
-      "tags": ["nlp", "scaling", "large-language-models"],
+      "tags": [
+        "nlp",
+        "scaling",
+        "large-language-models"
+      ],
       "arxiv": "https://arxiv.org/abs/2001.08361",
       "pdf": "https://arxiv.org/pdf/2001.08361",
       "tldr": "语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。"
@@ -18,21 +29,47 @@
       "title": "Training Compute-Optimal Large Language Models",
       "subtitle": "Hoffmann et al., DeepMind, 2022",
       "date": "2022-03-29",
-      "tags": ["nlp", "scaling", "chinchilla", "large-language-models"],
+      "tags": [
+        "nlp",
+        "scaling",
+        "chinchilla",
+        "large-language-models"
+      ],
       "arxiv": "https://arxiv.org/abs/2203.15556",
       "pdf": "https://arxiv.org/pdf/2203.15556",
       "tldr": "Chinchilla 重新估计算力最优缩放：模型参数和训练 token 应近似等比例增长。"
     },
     {
-      "category": "Infra",
+      "category": "LLM",
       "slug": "sparsely-gated-moe-1701-06538",
       "title": "Outrageously Large Neural Networks",
       "subtitle": "Shazeer et al., Google Brain, 2017",
       "date": "2017-01-23",
-      "tags": ["moe", "conditional-computation", "sparse-models", "scaling"],
+      "tags": [
+        "moe",
+        "conditional-computation",
+        "sparse-models",
+        "scaling"
+      ],
       "arxiv": "https://arxiv.org/abs/1701.06538",
       "pdf": "https://arxiv.org/pdf/1701.06538",
       "tldr": "稀疏门控 MoE 让模型拥有巨大总参数量，但每个输入只激活少数专家。"
+    },
+    {
+      "category": "CV",
+      "slug": "locateanything-2605-27365",
+      "title": "LocateAnything: Fast and High-Quality Vision-Language Grounding with Parallel Box Decoding",
+      "subtitle": "Wang et al., NVIDIA, 2026",
+      "date": "2026-05-27",
+      "tags": [
+        "vision-language",
+        "grounding",
+        "detection",
+        "parallel-decoding"
+      ],
+      "arxiv": "https://arxiv.org/abs/2605.27365",
+      "pdf": "https://arxiv.org/pdf/2605.27365",
+      "tldr": "LocateAnything 用 Parallel Box Decoding 把框作为几何单元并行生成，在视觉 grounding 中同时提升速度和高 IoU 定位质量。"
     }
   ]
 }
