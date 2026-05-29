@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="个人论文阅读记录与 readpaper 中文讲解" />
+  <title>Paper Reading — 论文阅读记录</title>
+  <link rel="stylesheet" href="assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-brand">
+        <span class="site-mark" aria-hidden="true">P</span>
+        <span>
+          <div class="site-logo">Paper Reading</div>
+        </span>
+      </div>
+    </div>
+  </header>
+  <main class="home-shell">
+    <section class="home-intro">
+      <div>
+        <h1>论文阅读</h1>
+        <p class="intro-copy">用中文整理重要论文的核心问题、方法脉络和结果判断。少而清晰，方便回看。</p>
+      </div>
+      <a class="latest-strip" href="CV/locateanything-2605-27365/">
+        <span>最近阅读</span>
+        <strong>LocateAnything: Fast and High-Quality Vision-Language Grounding with Parallel Box Decoding</strong>
+        <em>Wang et al., NVIDIA, 2026</em>
+      </a>
+    </section>
+
+    <section class="reading-board" aria-label="论文阅读列表">
+      <aside class="reading-sidebar">
+        <div class="side-block">
+          <h2>分类</h2>
+          <nav class="category-list" aria-label="论文分类">
+            <a class="category-link active" href="#LLM" data-cat="LLM">
+              <span>LLM</span>
+              <strong>3</strong>
+            </a>
+            <span class="category-link" data-cat="Agent">
+              <span>Agent</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="Infra">
+              <span>Infra</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="VLA">
+              <span>VLA</span>
+              <strong>0</strong>
+            </span>
+            <span class="category-link" data-cat="WAM">
+              <span>WAM</span>
+              <strong>0</strong>
+            </span>
+            <a class="category-link" href="#CV" data-cat="CV">
+              <span>CV</span>
+              <strong>1</strong>
+            </a>
+          </nav>
+        </div>
+        <div class="side-block muted">
+          <h2>待补方向</h2>
+          <p>Agent · 智能体、Infra · 训练与推理基础设施、VLA · 视觉-语言-动作、WAM · 世界模型 / 动作模型</p>
+        </div>
+      </aside>
+
+      <section class="paper-section" id="LLM" data-cat="LLM">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LLM</p>
+          <h2>大语言模型</h2>
+        </div>
+        <span>3 篇</span>
+      </div>
+        <ol class="paper-list">
+        <li>
+          <a class="paper-card" href="LLM/compute-optimal-2203-15556/">
+            <time datetime="2022-03-29">2022</time>
+            <div class="paper-main">
+              <h3>Training Compute-Optimal Large Language Models</h3>
+              <p class="meta">Hoffmann et al., DeepMind, 2022</p>
+              <p class="tldr">Chinchilla 重新估计算力最优缩放：模型参数和训练 token 应近似等比例增长。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        <li>
+          <a class="paper-card" href="LLM/scaling-laws-2001-08361/">
+            <time datetime="2020-01-23">2020</time>
+            <div class="paper-main">
+              <h3>Scaling Laws for Neural Language Models</h3>
+              <p class="meta">Kaplan et al., OpenAI, 2020</p>
+              <p class="tldr">语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        <li>
+          <a class="paper-card" href="LLM/sparsely-gated-moe-1701-06538/">
+            <time datetime="2017-01-23">2017</time>
+            <div class="paper-main">
+              <h3>Outrageously Large Neural Networks</h3>
+              <p class="meta">Shazeer et al., Google Brain, 2017</p>
+              <p class="tldr">稀疏门控 MoE 让模型拥有巨大总参数量，但每个输入只激活少数专家。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        </ol>
+      </section>
+      <section class="paper-section" id="CV" data-cat="CV" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CV</p>
+          <h2>计算机视觉</h2>
+        </div>
+        <span>1 篇</span>
+      </div>
+        <ol class="paper-list">
+        <li>
+          <a class="paper-card" href="CV/locateanything-2605-27365/">
+            <time datetime="2026-05-27">2026</time>
+            <div class="paper-main">
+              <h3>LocateAnything: Fast and High-Quality Vision-Language Grounding with Parallel Box Decoding</h3>
+              <p class="meta">Wang et al., NVIDIA, 2026</p>
+              <p class="tldr">LocateAnything 用 Parallel Box Decoding 把框作为几何单元并行生成，在视觉 grounding 中同时提升速度和高 IoU 定位质量。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        </ol>
+      </section>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const links = Array.from(document.querySelectorAll('.category-link[href^="#"]'));
+      const sections = Array.from(document.querySelectorAll('.paper-section'));
+
+      function showCategory(id, updateHash = false) {
+        const target = sections.find((section) => section.id === id);
+        if (!target) return;
+        sections.forEach((section) => {
+          section.hidden = section.id !== id;
+        });
+        links.forEach((link) => {
+          link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+        });
+        if (updateHash) {
+          history.replaceState(null, '', `#${id}`);
+        }
+      }
+
+      links.forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          showCategory(link.getAttribute('href').slice(1), true);
+        });
+      });
+
+      const initial = location.hash.slice(1) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
+      if (initial) showCategory(initial);
+    })();
+  </script>
+  <footer class="site-footer">Paper Reading · wudongming</footer>
+</body>
+</html>

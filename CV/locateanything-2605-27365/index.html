@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LocateAnything: Fast and High-Quality Vision-Language Grounding with Parallel Box Decoding — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://arxiv.org/abs/2605.27365" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2605.27365" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>LocateAnything — 让视觉语言模型更快、更准地“指到东西”</h1>
+<p>这篇论文关注一个很实际的问题：视觉语言模型不仅要会聊天，还要能在图像里准确找出“蓝色按钮”“左下角的人”“这段文字所在区域”。以前很多 VLM 把框坐标当成普通文本 token 一个个吐出来，慢，而且容易把一个框的四个坐标拆散学。LocateAnything 的核心做法是 Parallel Box Decoding：把一个框或一个点当成完整几何单元，一步并行预测出来，再配合大规模 LocateAnything-Data 训练，让定位任务同时更快、更稳。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>视觉 grounding 是“把语言落到图像位置”。</strong> 用户说“右侧红色按钮”，模型需要输出框或点，而不只是回答一段文字。</li>
+  <li><strong>VLM 常把坐标写成 token 序列。</strong> 一个框有四个数值，例如左上角和右下角坐标；旧方法会像写句子一样逐个生成这些 token。</li>
+  <li><strong>框的四个坐标不是独立词。</strong> 它们共同描述同一个几何对象，左、上、右、下之间有强关系。拆开生成会破坏这种结构。</li>
+  <li><strong>速度对交互式系统很关键。</strong> GUI agent、机器人、在线标注工具都需要低延迟定位；一张图里目标越多，逐 token 解码越拖慢。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>逐 token 坐标生成很慢。</strong> 每个坐标 token 都依赖前一个 token，模型必须串行往前走，目标框多时延迟会明显放大。</li>
+  <li><strong>普通多 token 预测不懂几何边界。</strong> 如果只是随便把 token 分块并行预测，块可能跨过不同框或类别，模型会学到不可靠的组合。</li>
+  <li><strong>复杂场景会放大格式错误。</strong> 多类别、多实例或密集排列的物体，容易让并行输出混入错误标签、结束符或中间位置。</li>
+  <li><strong>数据覆盖不足会限制泛化。</strong> 模型要同时做检测、短语 grounding、GUI 元素定位、文字定位和文档版面理解，单一数据源不够。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>把“一个框”当成原子单元。</strong> LocateAnything 不让模型随意预测几个坐标 token，而是让一个 box block 一次输出完整几何结构。</li>
+  <li><strong>并行解码和结构约束一起用。</strong> Parallel Box Decoding 保留框内部坐标的耦合关系，同时减少生成步数。</li>
+  <li><strong>慢模式、快模式、混合模式各司其职。</strong> Fast Mode 追求吞吐，Slow Mode 追求稳定，Hybrid Mode 默认快解码，发现异常时只回退问题块。</li>
+  <li><strong>大数据补足任务多样性。</strong> LocateAnything-Data 包含 1200 万图像、1.38 亿自然语言查询和 7.85 亿框标注，覆盖六类定位任务。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel rose">
+      <h4>旧式 NTP</h4>
+      <div class="sub">坐标逐 token 生成</div>
+      <div class="label">输出方式</div>
+      <div class="value">x1, y1, x2, y2 依次吐出</div>
+      <div class="label">主要问题</div>
+      <div class="value">慢，且框内部结构被拆散</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>对齐结构</span></div>
+    <div class="panel mint">
+      <h4>PBD</h4>
+      <div class="sub">整框并行解码</div>
+      <div class="label">输出方式</div>
+      <div class="value">一个 box block 一步给出完整框</div>
+      <div class="label">主要收益</div>
+      <div class="value">更少步数，更符合几何关系</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>按需回退</span></div>
+    <div class="panel sky">
+      <h4>Hybrid</h4>
+      <div class="sub">快解码 + 局部修正</div>
+      <div class="label">触发条件</div>
+      <div class="value">格式异常或空间置信度不稳</div>
+      <div class="label">处理方式</div>
+      <div class="value">只用 NTP 重解码问题块</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>模型底座仍是 VLM。</strong> 论文使用 Moon-ViT 视觉编码器、Qwen2.5 语言解码器和 MLP projector，把图像 token 接到语言模型里。</li>
+  <li><strong>输出被整理成固定长度 block。</strong> block 类型包括 Semantic、Box、Negative 和 End，分别表示语义、框、无目标和结束。</li>
+  <li><strong>训练同时保留两种格式。</strong> 一条 NTP 序列维持模型原有因果生成能力，另一条 MTP block 序列学习整块并行预测。</li>
+  <li><strong>注意力 mask 控制信息流。</strong> 不同 block 之间保持因果顺序，同一 block 内部可以双向看见彼此，从而并行补齐坐标。</li>
+  <li><strong>推理时只提交可信 token。</strong> MTP 预测后，模型把有效输出放进 KV cache，丢掉 mask 和重复 anchor，保持下一步上下文干净。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel lavender">
+      <h4>输入侧</h4>
+      <div class="sub">图像 + 文本查询</div>
+      <div class="value">保留原图细节，让模型理解“找什么”和“在哪里找”。</div>
+    </div>
+    <div class="panel mint">
+      <h4>结构侧</h4>
+      <div class="sub">box-aligned block</div>
+      <div class="value">把一个框、一段语义、一个否定结果都变成可训练的固定单元。</div>
+    </div>
+    <div class="panel peach">
+      <h4>解码侧</h4>
+      <div class="sub">Fast / Slow / Hybrid</div>
+      <div class="value">根据速度和可靠性要求，选择并行、串行或局部回退。</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它不是简单让 VLM 多吐几个 token。</strong> 普通 MTP 按 token 数分块，PBD 按几何对象分块，训练目标和任务结构更一致。</li>
+  <li><strong>它把检测和 grounding 放进统一生成框架。</strong> 同一个模型能处理物体检测、短语定位、GUI grounding、文字定位、版面分析和点定位。</li>
+  <li><strong>它承认并行解码会犯错。</strong> Hybrid Mode 没有假装快模式永远可靠，而是用格式检查和空间置信度检测触发局部 NTP 修正。</li>
+  <li><strong>它配套做了大规模数据引擎。</strong> 论文用已有检测数据、未标注图像、Qwen3-VL、Molmo、SAM 3 和 Rex-Omni 构造多目标 grounding 数据。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel cream">
+      <h4>结构无关并行</h4>
+      <div class="sub">按任意 token 块切分</div>
+      <div class="value">容易跨框、跨类别或跨语法边界，速度提高有限，准确率会掉。</div>
+    </div>
+    <div class="panel mint">
+      <h4>结构对齐并行</h4>
+      <div class="sub">按 box / point 切分</div>
+      <div class="value">一个几何对象对应一个解码单元，坐标关系更自然，吞吐也更高。</div>
+    </div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>LVIS 和 COCO 上速度和高 IoU 都更好。</strong> LocateAnything-3B 达到 12.7 boxes/s，LVIS mean F1 为 50.7，COCO mean F1 为 54.7，明显高于 Rex-Omni 的 5.0 boxes/s。</li>
+  <li><strong>高精度定位收益尤其明显。</strong> 在 LVIS 的 F1@IoU 0.95 上，LocateAnything-3B 是 31.1，Rex-Omni 是 20.7；这说明框更贴边。</li>
+  <li><strong>消融实验支持 PBD 本身有效。</strong> 在 COCO 消融里，PBD Slow 的 F1 为 52.1，高于 textual 和 quantized 坐标表示。</li>
+  <li><strong>Fast Mode 速度最高，Hybrid 更均衡。</strong> Fast Mode 达到 16.9 boxes/s、F1 49.6；Hybrid 保留 13.2 boxes/s，同时把 F1 提到 51.6。</li>
+  <li><strong>目标越多，并行优势越大。</strong> 论文报告目标框从 20 增到 300 时，NTP 延迟快速上升，而 PBD 的生成时间增长很小。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>数据引擎依赖多个强模型。</strong> Qwen3-VL、Molmo、SAM 3、Rex-Omni 都参与自动标注和验证，数据质量会受这些模型偏差影响。</li>
+  <li><strong>Hybrid 的触发规则仍然是工程启发式。</strong> 例如 top-1 概率和 top-5 差值阈值可能需要随模型、分辨率和任务重新调。</li>
+  <li><strong>论文主要展示定位，不等于完整视觉推理。</strong> 模型能更快更准地给框，但复杂因果推理、长期交互规划仍是另一层问题。</li>
+  <li><strong>新论文还需要社区复现。</strong> 这是 2026 年 5 月刚发布的工作，代码、模型和数据开放后的独立验证会更关键。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>它给多模态 agent 一个更实用的定位接口。</strong> 如果模型能低延迟输出可靠框和点，GUI 操作、机器人抓取和在线视觉问答都会受益。</li>
+  <li><strong>它把“生成式检测”的瓶颈说清楚了。</strong> 问题不只是坐标 token 化，而是 token 化后没有尊重几何对象的结构。</li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>

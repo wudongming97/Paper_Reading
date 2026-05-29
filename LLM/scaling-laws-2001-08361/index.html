@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scaling Laws for Neural Language Models — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark" aria-hidden="true">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://arxiv.org/abs/2001.08361" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2001.08361" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>Scaling Laws for Neural Language Models — 大模型为什么看起来越训越“划算”</h1>
+<p>这篇 2020 年的 OpenAI 论文把语言模型训练中的三个旋钮——<strong>模型参数量 N</strong>、<strong>训练 token 数 D</strong>、<strong>训练算力 C</strong>——放到同一个经验规律里看。核心发现是：在他们测试的范围内，测试损失会随着 N、D、C 以平滑的幂律下降，而且这个规律跨越多个数量级。它给当时的大模型训练提供了一张粗略地图：如果算力固定，与其把小模型训到很久，不如用更大的模型、较少的数据、并在还没完全收敛时停下。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>语言模型的目标很朴素。</strong> 给定前文，预测下一个 token。论文用交叉熵损失衡量预测质量，损失越低，说明模型越会给正确 token 分配高概率。</li>
+  <li><strong>这里的模型主要是 decoder-only Transformer。</strong> Transformer 用自注意力一次性看上下文，GPT 系列就属于这类架构。论文主要在 WebText2 上训练不同大小的 Transformer。</li>
+  <li><strong>“缩放”不是只把模型变大。</strong> 本文同时研究非嵌入参数量 \(N\)、训练 token 数 \(D\)、训练算力 \(C\)。问题是：这三个量各自变大时，损失会怎么变？</li>
+  <li><strong>幂律是一种可外推的直线。</strong> 如果在 log-log 图上 \(L\) 对 \(N\) 是直线，就意味着 \(L \propto N^{-\alpha}\)。这类关系很适合做预算规划，但前提是不要外推到论文实验范围之外太远。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>大模型训练没有清晰配方。</strong> 2019 到 2020 年，GPT-2 已经展示了规模的威力，但模型该多大、数据要多少、训多久，仍主要靠经验。</li>
+  <li><strong>架构细节可能让规划失控。</strong> 层数、宽度、注意力头数、batch size 都会变。如果每个细节都强烈影响损失，就很难提前估算训练收益。</li>
+  <li><strong>过拟合和欠训练都很贵。</strong> 数据太少时，大模型会记住训练集；算力太少时，模型还没学完就停了。论文想用统一公式描述这些边界。</li>
+  <li><strong>预算问题比单次训练更重要。</strong> 真正的问题不是“这个模型能不能更好”，而是“同样的钱应该买参数、数据，还是训练步数”。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>三个旋钮都服从平滑幂律。</strong> 当模型大小、数据量或算力成为主要瓶颈时，测试损失都按幂律下降。论文摘要强调，这些趋势跨越超过七个数量级。</li>
+  <li><strong>模型形状没有规模本身重要。</strong> 固定非嵌入参数量后，宽一点还是深一点的影响很小。论文把注意力从“怎么调形状”转向“怎么分配规模”。</li>
+  <li><strong>大模型更会用数据。</strong> 达到同样损失时，大模型需要的训练 token 和训练步数更少。这就是论文里“larger models are more sample-efficient”的直观含义。</li>
+  <li><strong>固定算力下要偏向更大的模型。</strong> 在 Kaplan 等人的拟合下，算力增加时，最优模型大小大约按 \(N_{\mathrm{opt}}\propto C^{0.73}\) 增长，数据只按 \(D_{\mathrm{opt}}\propto C^{0.27}\) 增长。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>模型规模 N</h4>
+      <div class="sub">非嵌入参数量</div>
+      <div class="label">瓶颈时</div>
+      <div class="value">\(L(N)=(N_c/N)^{\alpha_N}\)，\(\alpha_N \approx 0.076\)</div>
+      <div class="label">含义</div>
+      <div class="value">参数翻倍，损失约乘以 0.95</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>与 D、C 协同</span></div>
+    <div class="panel mint">
+      <h4>数据规模 D</h4>
+      <div class="sub">训练 token 数</div>
+      <div class="label">瓶颈时</div>
+      <div class="value">\(L(D)=(D_c/D)^{\alpha_D}\)，\(\alpha_D \approx 0.095\)</div>
+      <div class="label">早停设定</div>
+      <div class="value">数据太少时，大模型会过拟合</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>受算力约束</span></div>
+    <div class="panel peach">
+      <h4>算力 C</h4>
+      <div class="sub">最优分配 \(C_{\min}\)</div>
+      <div class="label">瓶颈时</div>
+      <div class="value">\(L(C_{\min})=(C_c^{\min}/C_{\min})^{\alpha_C}\)</div>
+      <div class="label">实践</div>
+      <div class="value">\(\alpha_C \approx 0.050\)，提升很慢但稳定</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>先分别拟合三个资源瓶颈。</strong> 数据足够时看 \(N\)，模型足够大时看 \(D\)，固定最优训练方案时看 \(C_{\min}\)。每条曲线都在 log-log 图上接近直线。</li>
+  <li><strong>联合公式描述模型和数据的拉扯。</strong> 论文给出的早停损失近似为 \(L(N,D)=\left[\left(N_c/N\right)^{\alpha_N/\alpha_D}+D_c/D\right]^{\alpha_D}\)。它说的是：只加模型或只加数据，都会很快被另一边卡住。</li>
+  <li><strong>训练步数也能放进同一张图。</strong> 论文拟合 \(L(N,S)\) 来描述训练过程，其中 \(S\) 是参数更新步数。这样可以用短训练曲线预测更长训练后的损失。</li>
+  <li><strong>batch size 有临界区间。</strong> \(B_{\mathrm{crit}}(L)\) 随损失变小而变大。batch 太小浪费并行时间，太大又浪费算力；临界 batch 附近是折中点。</li>
+  <li><strong>算力近似来自 token 和参数的乘积。</strong> 训练一个 token 的前向和反向传播成本大致与 \(N\) 成正比，所以总成本可粗略看成模型大小、batch 和步数的组合。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel lavender">
+      <h4>项 1：模型容量</h4>
+      <div class="sub">\((N_c/N)^{\alpha_N}\)</div>
+      <div class="value">模型太小，数据再多也装不下规律</div>
+    </div>
+    <div class="panel mint">
+      <h4>项 2：数据</h4>
+      <div class="sub">\(D_c/D\)</div>
+      <div class="value">数据太少，大模型会先记住训练集</div>
+    </div>
+    <div class="panel sky">
+      <h4>合成：早停损失</h4>
+      <div class="sub">取 \(\alpha_D\) 次幂</div>
+      <div class="value">容量项和数据项共同决定最优停止点</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它把经验变成预算公式。</strong> 早期工作已观察到一些缩放趋势，但本文把 \(N\)、\(D\)、\(C\) 放进同一套训练规划语言里。</li>
+  <li><strong>它弱化了架构微调的地位。</strong> 论文显示，在合理范围内，宽深比和注意力头数不是主要矛盾。对大规模训练来说，资源分配比小调参更关键。</li>
+  <li><strong>它挑战了“训到收敛”的直觉。</strong> 如果目标是固定算力下最低损失，小模型训到收敛未必划算。更大的模型即使早停，也可能更省算力。</li>
+  <li><strong>它也给后续修正留下空间。</strong> 后来的 Chinchilla 结果认为数据应随模型更均衡地增长。也就是说，Kaplan 的现象很重要，但最优配比不是永恒常数。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel rose">
+      <h4>传统直觉</h4>
+      <div class="sub">把模型训久一点</div>
+      <div class="value">更多步数带来收益，但很快进入递减区间</div>
+    </div>
+    <div class="panel cream">
+      <h4>Kaplan 结论</h4>
+      <div class="sub">大模型 + 早停</div>
+      <div class="value">固定算力下，优先扩大模型通常更有效</div>
+    </div>
+    <div class="panel sky">
+      <h4>Chinchilla 修正</h4>
+      <div class="sub">模型和数据更均衡</div>
+      <div class="value">后来发现很多模型其实训练 token 不够</div>
+    </div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>幂律范围很宽。</strong> 论文报告损失对模型大小、数据量和算力的趋势都很平滑，核心趋势跨越超过七个数量级。</li>
+  <li><strong>参数翻倍的单次收益不大。</strong> \(\alpha_N \approx 0.076\)，所以参数翻倍只让损失大约乘以 \(2^{-0.076}\approx0.95\)。真正的威力来自连续多次翻倍。</li>
+  <li><strong>架构形状影响很小。</strong> 在固定参数量下，宽深比大幅变化只带来小幅损失差异。论文用这点支持“规模优先”的结论。</li>
+  <li><strong>跨数据集迁移有近似规律。</strong> 在 WebText2 外的数据分布上，损失曲线的斜率相近，主要像是整体上下平移。</li>
+  <li><strong>Transformer 明显优于 LSTM。</strong> 在长上下文下，Transformer 能持续利用更多上下文，LSTM 的收益更快停住。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>常数依赖数据和分词器。</strong> \(N_c\)、\(D_c\) 不是物理常数，而是和 WebText2、BPE 词表、训练设置绑定。换语料后需要重新拟合。</li>
+  <li><strong>幂律不能无限外推。</strong> 损失不可能一直下降到负数，极大规模下必然有平台或新瓶颈。论文只是说在当时范围内没有看到明显偏离。</li>
+  <li><strong>最优训练受硬件限制。</strong> 理论上想训练更大的模型，现实中会被显存、并行效率、通信成本卡住。预算公式不是工程方案的全部。</li>
+  <li><strong>下游能力不等于预训练损失。</strong> 论文主要研究语言建模损失。推理、对齐、安全性、工具使用等能力不会被一个 loss 数字完全解释。</li>
+  <li><strong>后续工作改变了“数据少一点”的结论。</strong> Chinchilla 系列结果显示，许多大模型其实数据训练不足。今天看这篇论文，最好把它理解为 scaling law 研究的起点，而不是最终答案。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>它塑造了大模型时代的训练直觉。</strong> “可预测地放大模型会降低损失”成为 GPT-3 前后的核心叙事之一，也让算力预算可以更早被估算。</li>
+  <li><strong>它开启了后续 scaling law 竞赛。</strong> Chinchilla、数据缩放、推理缩放和多模态缩放都在延续同一个问题：模型、数据、算力到底该怎样配比。</li>
+</ul>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    </article>
+  </main>
+</body>
+</html>
