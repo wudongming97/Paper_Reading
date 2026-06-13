@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mixture-of-Transformers: A Sparse and Scalable Architecture for Multi-Modal Foundation Models — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://arxiv.org/abs/2411.04996" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2411.04996" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>Mixture-of-Transformers — 多模态模型不一定要所有模态共用一套层</h1>
+<p>这篇论文提出 MoT：Mixture-of-Transformers。它的直觉很朴素：文本、图像、语音虽然都能被变成 token，但它们的统计规律和训练难点不一样。与其让一个 dense Transformer 的全部参数同时服务所有模态，不如按模态拆开非 embedding 参数，让文本 token 走文本参数、图像 token 走图像参数、语音 token 走语音参数；同时保留全局 self-attention，让不同模态仍然能互相看见。结果是，在多个多模态预训练设置里，MoT 用明显更少 FLOPs 达到 dense baseline 的质量。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>多模态基础模型把不同数据都变成 token。</strong> 文本本来是 token，图像可以用 tokenizer 变成离散 image token，语音也可以变成离散 speech token。</li>
+  <li><strong>早融合模型把这些 token 放进同一条序列。</strong> Chameleon 这类模型会让文本和图像 token 交错进入同一个 Transformer，靠 self-attention 建模跨模态关系。</li>
+  <li><strong>dense Transformer 默认所有模态共享参数。</strong> 同一套 attention、FFN 和 LayerNorm 同时处理文本、图像、语音，这很统一，但也可能互相干扰。</li>
+  <li><strong>MoE 提供了“稀疏激活”的思路。</strong> MoE 每个 token 只走部分专家来省算力，但 learned router 会带来负载均衡、训练不稳和推理因果性问题。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>多模态预训练比纯文本更贵。</strong> 论文提到 Chameleon 需要 9.2T 混合 token，而 LLaMA2 文本训练是 2T token 量级，训练预算压力很大。</li>
+  <li><strong>不同模态的优化目标会冲突。</strong> 图像、文本、语音在 dense 模型里共用参数，训练动态不同，可能让某个模态拖累另一个模态。</li>
+  <li><strong>特征空间天然按模态分开。</strong> 作者做 PCA 发现，即便输入都被当成 token，模型中间表示仍会形成文本、图像、语音的不同簇。</li>
+  <li><strong>普通 MoE 不一定适合多模态生成。</strong> learned router 需要学会分配专家，但多模态早期训练本来就难，router 和专家一起没训好时容易不稳。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>按模态拆 Transformer 参数。</strong> MoT 为文本、图像、语音准备不同的 attention 投影、FFN 和 LayerNorm；每个 token 根据自己的模态走对应参数。</li>
+  <li><strong>保留全局 self-attention。</strong> 参数按模态拆开，但注意力仍然在完整混合序列上做，文本 token 仍能 attend 到图像 token。</li>
+  <li><strong>路由规则是确定的。</strong> MoT 不让 learned router 猜专家，而是直接按 token 的模态分派参数，因此没有 MoE 常见的负载均衡训练问题。</li>
+  <li><strong>激活 FLOPs 和 dense 对齐。</strong> 论文控制实验中，MoT 和 dense baseline 的训练/推理 FLOPs 可比；收益来自更合适的参数分工，而不是偷少算了。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>混合输入序列</h4>
+      <div class="sub">text + image + speech tokens</div>
+      <div class="label">形式</div>
+      <div class="value">不同模态 token 交错出现</div>
+      <div class="label">目标</div>
+      <div class="value">仍然需要跨模态理解</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>按模态分组</span></div>
+    <div class="panel mint">
+      <h4>模态专属参数</h4>
+      <div class="sub">attention / FFN / LayerNorm</div>
+      <div class="label">文本</div>
+      <div class="value">走文本 Transformer 参数</div>
+      <div class="label">图像/语音</div>
+      <div class="value">走各自参数分支</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>全局注意力</span></div>
+    <div class="panel peach">
+      <h4>统一输出</h4>
+      <div class="sub">cross-modal context kept</div>
+      <div class="label">关键点</div>
+      <div class="value">参数分开，信息不隔离</div>
+      <div class="label">收益</div>
+      <div class="value">更快达到 dense 质量</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>每层先按模态取出 token。</strong> 如果一个位置是图像 token，就进入图像分支；如果是文本 token，就进入文本分支。</li>
+  <li><strong>Q、K、V 投影按模态分别计算。</strong> 文本、图像、语音使用各自的 projection matrix，把 token 映射成 query、key、value。</li>
+  <li><strong>注意力矩阵在全序列上计算。</strong> 各模态的 Q/K/V 会按原始顺序拼回去，然后做一次全局 self-attention，跨模态依赖没有被切断。</li>
+  <li><strong>输出投影、LayerNorm 和 FFN 也按模态分开。</strong> 这相当于每个模态有自己的“处理器”，但它们共享同一个序列上下文。</li>
+  <li><strong>它能适配不同训练目标。</strong> 在 Chameleon 设置里图像是离散 token 自回归生成；在 Transfusion 设置里，文本用自回归，图像用 diffusion objective。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel lavender">
+      <h4>Dense Transformer</h4>
+      <div class="sub">所有模态共用一套层</div>
+      <div class="value">结构最简单，但文本、图像、语音都争同一组非 embedding 参数。</div>
+    </div>
+    <div class="panel sky">
+      <h4>MoE</h4>
+      <div class="sub">learned router 选专家</div>
+      <div class="value">稀疏激活很强，但 router 可能不均衡，训练和推理都更复杂。</div>
+    </div>
+    <div class="panel mint">
+      <h4>MoT</h4>
+      <div class="sub">modality routing</div>
+      <div class="value">路由由模态决定，简单稳定；全局注意力保留跨模态交互。</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它把稀疏性从 FFN 扩展到整层 Transformer。</strong> 之前很多方法只在 MoE/FFN 层做专家，MoT 连 attention projection 和 LayerNorm 也按模态拆。</li>
+  <li><strong>它不是把多模态切成多个孤立塔。</strong> 多塔模型容易丢跨模态早融合优势；MoT 的全局 attention 让所有 token 仍处在同一个上下文里。</li>
+  <li><strong>它把“模态差异”作为路由信号。</strong> 作者的 PCA 分析说明模态本来就在表示空间中分开，所以用模态做确定性路由是有经验依据的。</li>
+  <li><strong>它和 MoE 可以互补。</strong> 论文还做了早期探索：在 MoT 的文本分支里放 MoE-4x，可以进一步提升文本，同时保留图像分支收益。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel rose">
+      <h4>旧做法：统一参数</h4>
+      <div class="sub">one transformer for all modalities</div>
+      <div class="value">优点是干净统一；问题是每个模态的统计规律不同，共用参数可能造成竞争。</div>
+    </div>
+    <div class="panel cream">
+      <h4>MoT：统一序列，分开参数</h4>
+      <div class="sub">shared context, modality-specific weights</div>
+      <div class="value">保留跨模态 attention，同时给不同模态自己的 FFN、attention projection 和 LayerNorm。</div>
+    </div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>Chameleon 7B 用 55.8% FLOPs 匹配 dense。</strong> 在文本+图像自回归设置里，MoT 达到 dense baseline 的验证质量，同时节省约 44.2% 训练 FLOPs。</li>
+  <li><strong>图像模态收益尤其大。</strong> 7B Chameleon 中，MoT 只需 34.8% dense 训练步数就能匹配图像训练损失。</li>
+  <li><strong>加入语音后收益更明显。</strong> 在 text+image+speech 设置里，MoT 达到 speech dense baseline 表现只需要 37.2% FLOPs。</li>
+  <li><strong>Transfusion 里小 MoT 能打过大 dense。</strong> 760M MoT 用 1.4B dense 一半 FLOPs，在 CLIP、FID、CIDEr 和图像训练损失上都更好。</li>
+  <li><strong>墙钟时间也真的变少。</strong> 在 AWS p4de.24xlarge A100 上，7B MoT 达到 dense 图像质量只需 47.2% 时间，文本质量需 75.6% 时间。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>它需要知道 token 属于哪个模态。</strong> 对文本、图像、语音这种边界清楚的场景很自然；对更细粒度或混合表示，模态标签可能没那么简单。</li>
+  <li><strong>参数总量会增加。</strong> 激活 FLOPs 可控，但每个模态都有一套非 embedding 参数，存储、通信和部署调度仍要认真处理。</li>
+  <li><strong>文本收益没有图像那么稳定。</strong> 在 Transfusion 设置里，MoT 对文本训练/验证损失提升较小，作者也认为文本本身可能已经比较高效。</li>
+  <li><strong>结果主要来自预训练对比。</strong> 论文有 fine-tuning 展示，但真实产品还会关心对齐、工具使用、长上下文和端到端推理能力。</li>
+  <li><strong>系统收益依赖集群实现。</strong> MoT 的实际 wall-clock 加速和 GPU 数、通信模式、batch 内模态比例有关，不能只看理论 FLOPs。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>它给多模态 scaling 一个很清晰的方向。</strong> 不一定要让所有模态共享同一套大层；按模态分配参数可能是更便宜的扩展方式。</li>
+  <li><strong>它把 MoE 讨论从“专家怎么学路由”拉回到“任务结构是什么”。</strong> 对多模态模型来说，模态本身就是强结构信号，未必需要 router 从零学习。</li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>

@@ -13,10 +13,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = ROOT / "papers.json"
-DEFAULT_CATEGORIES = ["LLM", "Agent", "Infra", "VLA", "WAM", "CV"]
+DEFAULT_CATEGORIES = ["LLM", "blog", "Agent", "Infra", "VLA", "WAM", "CV"]
 
 CATEGORY_DESC = {
     "LLM": "大语言模型",
+    "blog": "技术博客",
     "Agent": "智能体",
     "Infra": "训练与推理基础设施",
     "VLA": "视觉-语言-动作",
@@ -68,8 +69,19 @@ def categories(catalog: dict) -> list[str]:
     return catalog.get("categories") or DEFAULT_CATEGORIES
 
 
-def build_page(*, title: str, fragment: str, arxiv: str, pdf: str) -> str:
+def build_page(
+    *,
+    title: str,
+    fragment: str,
+    source: str,
+    source_label: str,
+    arxiv: str,
+    pdf: str,
+) -> str:
     links = []
+    if source:
+        label = source_label or "Source"
+        links.append(f'<a href="{escape(source)}" target="_blank" rel="noopener">{escape(label)}</a>')
     if arxiv:
         links.append(f'<a href="{escape(arxiv)}" target="_blank" rel="noopener">arXiv</a>')
     if pdf:
@@ -299,12 +311,16 @@ def upsert_catalog(
     subtitle: str,
     paper_date: str,
     tags: list[str],
+    source: str,
+    source_label: str,
     arxiv: str,
     pdf: str,
     tldr: str,
 ) -> None:
     if "categories" not in catalog:
         catalog["categories"] = DEFAULT_CATEGORIES
+    elif category not in catalog["categories"]:
+        catalog["categories"].append(category)
     papers = catalog.setdefault("papers", [])
     entry = {
         "category": category,
@@ -313,6 +329,8 @@ def upsert_catalog(
         "subtitle": subtitle,
         "date": paper_date,
         "tags": tags,
+        "source": source,
+        "source_label": source_label,
         "arxiv": arxiv,
         "pdf": pdf,
         "tldr": tldr,
@@ -333,6 +351,8 @@ def main() -> int:
     parser.add_argument("--subtitle", default="")
     parser.add_argument("--date", default=date.today().isoformat())
     parser.add_argument("--tags", default="")
+    parser.add_argument("--source", default="")
+    parser.add_argument("--source-label", default="Source")
     parser.add_argument("--arxiv", default="")
     parser.add_argument("--pdf", default="")
     parser.add_argument("--tldr", default="")
@@ -357,6 +377,8 @@ def main() -> int:
     page = build_page(
         title=args.title,
         fragment=fragment,
+        source=args.source,
+        source_label=args.source_label,
         arxiv=args.arxiv,
         pdf=args.pdf,
     )
@@ -374,6 +396,8 @@ def main() -> int:
         subtitle=args.subtitle,
         paper_date=args.date,
         tags=tags,
+        source=args.source,
+        source_label=args.source_label,
         arxiv=args.arxiv,
         pdf=args.pdf,
         tldr=args.tldr,

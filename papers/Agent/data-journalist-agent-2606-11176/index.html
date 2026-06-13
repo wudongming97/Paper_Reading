@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Journalist Agent: Transforming Data into Verifiable Multimodal Stories — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://data2story.github.io" target="_blank" rel="noopener">Website</a><a href="https://arxiv.org/abs/2606.11176" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2606.11176" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>Data Journalist Agent — 把数据变成可审计的多媒体故事</h1>
+<p>这篇论文提出 Data2Story，一个“虚拟 newsroom”式的多智能体系统。它的目标不是只回答一个数据问题，而是从原始数据出发，完成找背景、跑统计、选故事角度、设计多媒体素材、生成网页、检查页面、绑定证据链，最后产出一篇普通读者能读完、也能追溯证据的数据新闻文章。论文最重要的点不是“AI 写新闻”，而是把可验证性做成产物的一部分。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>数据新闻是跨学科工作。</strong> 一篇好文章通常要查背景、清洗数据、做统计、选叙事角度、设计图表和网页，不是一个简单摘要任务。</li>
+  <li><strong>已有 agent 多半只覆盖局部环节。</strong> 数据科学 agent 会跑分析，设计 agent 会做网页，搜索 agent 会找资料，但它们很少端到端产出可读的数据新闻。</li>
+  <li><strong>新闻产物最怕不可追溯。</strong> 读者需要知道数字来自哪里、图表是否真的反映数据、背景说法是否有来源，否则 agent 很容易变成漂亮但不可信的页面。</li>
+  <li><strong>多媒体不只是装饰。</strong> 地理题材可能需要交互地图，音乐题材可能需要音频片段，时间线题材可能需要动画或可探索图表。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>从数据到故事不是线性生成。</strong> 先分析再写作还不够，因为写作角度会反过来影响要查什么背景、展示什么图表。</li>
+  <li><strong>单个大模型难同时扮演整间 newsroom。</strong> 侦查、统计、编辑、设计、前端实现和审校需要不同技能，强行揉在一个提示里容易漏步骤。</li>
+  <li><strong>人类文章强在角度和设计，但证据链不总是机器可查。</strong> 读者能读懂文章，却未必能追到每个数字对应的脚本行或数据来源。</li>
+  <li><strong>评价这类产物也很难。</strong> 不能只看 BLEU 或准确率，因为文章同时包含叙事、交互、图表、审美和数据可信度。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>把 agent 系统做成虚拟 newsroom。</strong> Data2Story 用七个角色协作：Detective、Analyst、Editor、Designer、Programmer、Auditor 和 Inspector。</li>
+  <li><strong>每个角色产出可追踪中间物。</strong> 背景来源、统计代码、分析结果、编辑计划、视觉素材和 HTML 片段都会留下结构化记录。</li>
+  <li><strong>Inspector 把最终页面绑回证据。</strong> 它把文章中的句子、数字、图表和交互元素连接到代码行、数据文件或外部 URL。</li>
+  <li><strong>最终产物是可读网页而不是报告。</strong> 论文强调普通读者消费的是故事页面，所以系统直接生成多媒体 HTML article。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>Raw data</h4>
+      <div class="sub">CSV / table / source files</div>
+      <div class="label">输入</div>
+      <div class="value">结构化数据和少量任务上下文</div>
+      <div class="label">风险</div>
+      <div class="value">数据本身通常没有故事角度</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>newsroom</span></div>
+    <div class="panel mint">
+      <h4>Specialist agents</h4>
+      <div class="sub">search, analysis, edit, design</div>
+      <div class="label">工作</div>
+      <div class="value">查背景、跑代码、选角度、做素材</div>
+      <div class="label">约束</div>
+      <div class="value">中间结果都要能追踪</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>publish</span></div>
+    <div class="panel peach">
+      <h4>Auditable story</h4>
+      <div class="sub">interactive HTML article</div>
+      <div class="label">输出</div>
+      <div class="value">多媒体网页和 Inspector 证据链</div>
+      <div class="label">目标</div>
+      <div class="value">能读、能查、能复核</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>Detective 负责补上下文。</strong> 它用 web search 给原始数据补充背景、来源 URL 和可复用媒体，避免后续角色凭空解释数据。</li>
+  <li><strong>Analyst 负责完整统计探索。</strong> 它分析列、枚举可支持的问题，并运行 Python/R 代码，输出结果和对应脚本指针。</li>
+  <li><strong>Editor 负责把结果变成故事。</strong> 它决定主线、取舍、排序和段落级大纲，让文章不只是事实列表。</li>
+  <li><strong>Designer 和 Programmer 负责读者体验。</strong> Designer 为每个发现选择合适媒体，Programmer 把文字、图表和交互组装成 HTML 页面。</li>
+  <li><strong>Auditor 和 Inspector 分别管外观和证据。</strong> Auditor 找布局、交互和资产问题；Inspector 则把最终页面元素绑定到上游证据。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel sky">
+      <h4>Evidence producers</h4>
+      <div class="sub">Detective + Analyst</div>
+      <div class="value">一个找外部语境，一个跑可执行统计，负责给故事提供可验证材料。</div>
+    </div>
+    <div class="panel mint">
+      <h4>Story builders</h4>
+      <div class="sub">Editor + Designer + Programmer</div>
+      <div class="value">决定文章讲什么、怎么展示，并生成真正能交互的网页。</div>
+    </div>
+    <div class="panel cream">
+      <h4>Quality guards</h4>
+      <div class="sub">Auditor + Inspector</div>
+      <div class="value">一个修页面质量，一个建立证据链，让文章既好看又可审计。</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它把 claim-level provenance 放进最终产物。</strong> Inspector 不只是内部日志，而是把可见句子和图表绑定到代码证据或引用证据。</li>
+  <li><strong>它把 data agent 的输出形态升级成网页故事。</strong> 许多系统输出报告或图表，Data2Story 目标是非专家读者愿意阅读的多媒体新闻页面。</li>
+  <li><strong>它用多种评价协议评估“文章”。</strong> 论文同时看人类角度覆盖、53 人盲评、computer-use agent judge 和可验证性。</li>
+  <li><strong>它承认人类记者仍有优势。</strong> 作者明确说系统是 collaborator，不是替代记者；人类仍强在报道角度、创意设计和信息密度。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel rose">
+      <h4>普通生成文章</h4>
+      <div class="sub">looks plausible</div>
+      <div class="value">读起来像新闻，但数字、图表和背景 claim 很难逐条追溯。</div>
+    </div>
+    <div class="panel mint">
+      <h4>Data2Story</h4>
+      <div class="sub">looks + checks</div>
+      <div class="value">每个重要片段都有上游证据：数据、脚本行、分析结果、素材调用或外部 URL。</div>
+    </div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>评估集包含 18 篇人类对照文章。</strong> 来源覆盖 The Economist、The Pudding 和 TidyTuesday，题材包括科学、媒体、体育、政治、健康和气候。</li>
+  <li><strong>人类角度约一半被 agent 覆盖。</strong> Human-in-Agent 为 50.4%，Agent-in-Human 为 35.1%，说明 agent 能抓到不少人类角度，也会提出人类没写的 claim。</li>
+  <li><strong>53 人盲评更偏好 Data2Story。</strong> 平均分 Data2Story 为 4.21，人类文章为 3.38；整体偏好上 39 人选 Data2Story，13 人选人类，1 人认为平手。</li>
+  <li><strong>最大优势是透明度。</strong> 五个 rubric 里，Data2Story 在 Transparency 上提升最大，差值为 +1.49。</li>
+  <li><strong>可审计性差距很大。</strong> Data2Story 93% 可见 claim 能追到上游证据，人类文章在该机器检查设置下约 25%。这衡量的是 provenance，不等于事实正确率。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>人类的报道角度仍然更深。</strong> 很多强角度来自采访、行业经验和外部判断，不是表格本身能推出的。</li>
+  <li><strong>创意交互还比不上手工团队。</strong> The Pudding 这类长篇 scrollytelling 有大量定制互动，agent 目前更多是标准图表和通用多媒体。</li>
+  <li><strong>Inspector 有认知负担。</strong> 66% 参与者觉得有帮助，但也有人觉得复杂或分散注意力，证据链界面还需要更好设计。</li>
+  <li><strong>当前系统是全自动的。</strong> 论文也指出，更可靠的版本应允许记者在循环中给反馈、调整角度和修订产物。</li>
+  <li><strong>污染风险不能完全排除。</strong> 一些 Economist 和 Pudding 文章可能出现在模型训练语料里，虽然作者用双向 coverage 和 verifiability 降低了这个影响。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>它给 agentic data system 一个更高标准。</strong> 不是只要能分析数据，而是要能把结果变成读者可用、编辑可审、证据可追的公开产物。</li>
+  <li><strong>它也给 AI 新闻应用划了边界。</strong> 适合做审计、素材、探索和长尾数据故事；真正的报道判断和创意表达仍需要人类编辑。</li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>
