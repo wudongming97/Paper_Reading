@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="ImageWAM 论文中文可视化解读：机器人世界动作模型是否真的需要生成视频？" />
+  <title>ImageWAM：机器人行动前不必先生成一段视频 — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span><span class="site-logo">Paper Reading</span><span class="site-tagline">返回阅读列表</span></span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://arxiv.org/abs/2606.19531" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2606.19531" target="_blank" rel="noopener">PDF</a><a href="https://zhangwenyao1.github.io/ImageWAM/" target="_blank" rel="noopener">项目页</a></div>
+    <article class="readpaper-body">
+      <h1>ImageWAM — 机器人行动前，不必先“脑补一段视频”</h1>
+      <p>这篇论文挑战了机器人世界动作模型（WAM）里一个很自然的假设：要让机器人“先想后做”，就必须预测未来视频。ImageWAM 认为，控制真正需要的是“当前画面应该按指令发生什么变化”，而不是完整、逼真的时间序列。它把预训练图像编辑模型当作意图提取器，从编辑去噪过程里取出 KV 缓存，再直接驱动动作模型；推理时既不生成视频，也不真正解码编辑后的图片。</p>
+
+      <h2>背景铺垫</h2>
+      <ul>
+        <li><strong>VLA 把视觉、语言直接映射为动作。</strong> 机器人看到当前画面，读懂“把鞋放进盒子”，然后输出一段关节或末端执行器动作。</li>
+        <li><strong>WAM 在行动前加入“世界会怎样变化”的中间推理。</strong> 常见做法是先预测未来视频，再由逆动力学模型或动作头把未来视觉状态翻译为动作。</li>
+        <li><strong>动作块是一小段连续控制。</strong> 模型不是每次只给一个瞬时动作，而是预测从当前时刻开始、长度为 H 的动作序列。</li>
+        <li><strong>KV 缓存是模型内部的上下文记忆。</strong> Transformer 每层保存 key/value 表征；这里它们编码了当前图像、语言指令和预期视觉变化之间的关系。</li>
+      </ul>
+
+      <h2>问题与核心想法</h2>
+      <ul>
+        <li><strong>完整未来视频包含大量控制不需要的信息。</strong> 背景、光照、相机运动和时间平滑都耗费计算，却未必帮助决定机械臂下一步往哪动。</li>
+        <li><strong>长时视频想象容易把错误传给动作头。</strong> 物体轻微位移或接触状态预测错了，后续动作就可能建立在虚构的世界上；论文 Figure 5 展示了这类几何畸变。</li>
+        <li><strong>图像编辑更贴近“任务完成后哪里应改变”。</strong> 编辑预训练天然学习语言指令、源图像和局部变化的对应关系，例如只改变鞋与盒子的相对位置。</li>
+        <li><strong>关键不是生成一张好看的目标图。</strong> ImageWAM 只借用编辑模型内部的变化表征，并在推理时跳过最终图像解码。</li>
+      </ul>
+
+      <div class="diagram">
+        <div class="grid-2">
+          <div class="panel rose">
+            <h4>视频 WAM：预测完整过程</h4>
+            <div class="sub">当前画面 → 多帧未来 → 动作</div>
+            <div class="label">必须建模</div><div class="value">背景、外观、相机运动、时序连续性</div>
+            <div class="label">主要风险</div><div class="value">token 密集、延迟高；错误想象会误导动作</div>
+          </div>
+          <div class="panel mint">
+            <h4>ImageWAM：提取变化意图</h4>
+            <div class="sub">当前画面 + 指令 → 编辑缓存 → 动作</div>
+            <div class="label">重点建模</div><div class="value">什么应改变、在哪里改变、目标状态是什么</div>
+            <div class="label">主要收益</div><div class="value">一轮编辑前向即可；无需视频或目标图解码</div>
+          </div>
+        </div>
+      </div>
+
+      <h2>方法怎么做</h2>
+      <ul>
+        <li><strong>训练时，编辑分支学习预测未来端点帧。</strong> 目标是动作块执行后的观测，而不是中间每一帧；作者用 flow matching 学习从噪声到该目标潜变量的速度场。</li>
+        <li><strong>每次随机抽一个编辑去噪时刻 τ。</strong> 模型在这一时刻运行编辑分支，并收集所有 Transformer 层的 KV 缓存，让动作头适应不同去噪阶段的表征。</li>
+        <li><strong>动作专家也用 flow matching 生成动作块。</strong> 它从带噪动作出发，联合读取当前画面、语言、机器人状态和编辑缓存，逐步还原专家动作。</li>
+        <li><strong>两个目标一起优化。</strong> 总损失是图像编辑损失与动作损失之和；视觉语言理解部分冻结，只训练扩散生成分支和动作专家。</li>
+        <li><strong>推理时只做一次编辑分支前向。</strong> 固定一个去噪时刻 τ* 取得缓存，然后由动作专家去噪动作；编辑图本身从未被完整生成。</li>
+      </ul>
+
+      <div class="diagram">
+        <div class="flow">
+          <div class="panel lavender">
+            <h4>输入</h4><div class="sub">观察 + 指令 + 机器人状态</div>
+            <div class="label">例子</div><div class="value">“把鞋放进盒子”</div>
+          </div>
+          <div class="arrow"><span class="glyph">→</span><span>一次前向</span></div>
+          <div class="panel mint">
+            <h4>图像编辑骨干</h4><div class="sub">OmniGen2 / Ovis-U1 / FLUX.2</div>
+            <div class="label">输出</div><div class="value">逐层编辑 KV 缓存，不解码图片</div>
+          </div>
+          <div class="arrow"><span class="glyph">→</span><span>联合注意力</span></div>
+          <div class="panel peach">
+            <h4>动作专家</h4><div class="sub">动作 flow matching</div>
+            <div class="label">输出</div><div class="value">未来 H 步可执行动作</div>
+          </div>
+        </div>
+      </div>
+
+      <h2>新意在哪里</h2>
+      <ul>
+        <li><strong>相对普通 VLA，它保留了“先推理世界变化”的中间层。</strong> 动作头不只依赖通用视觉语义，还得到明确面向任务变化的编辑上下文。</li>
+        <li><strong>相对视频 WAM，它把轨迹预测压缩成端点变化。</strong> 论文的主张不是世界模型无用，而是控制所需的世界表征可以比未来视频更紧凑。</li>
+        <li><strong>相对 FastWAM，它换掉了预训练先验。</strong> FastWAM 测试时也可移除未来 token，但其缓存来自视频骨干；ImageWAM 的缓存来自专门学习“按语言修改源图”的编辑骨干。</li>
+        <li><strong>理解与生成被有意拆开。</strong> 作者冻结 VLM 理解模块，只适配细粒度生成分支与动作专家，以减少统一理解—生成模型里的目标干扰。</li>
+      </ul>
+
+      <div class="diagram">
+        <div class="grid-3">
+          <div class="panel sky"><h4>VLA</h4><div class="sub">看懂后直接行动</div><div class="label">中间表征</div><div class="value">通用视觉—语言特征</div><div class="label">优点</div><div class="value">路径短</div></div>
+          <div class="panel rose"><h4>视频 WAM</h4><div class="sub">先想象完整未来</div><div class="label">中间表征</div><div class="value">多帧未来 token / 视频</div><div class="label">代价</div><div class="value">慢，且会积累视觉伪影</div></div>
+          <div class="panel mint"><h4>ImageWAM</h4><div class="sub">先定位目标变化</div><div class="label">中间表征</div><div class="value">语言条件下的编辑 KV 缓存</div><div class="label">取舍</div><div class="value">保留推理，舍弃密集想象</div></div>
+        </div>
+      </div>
+
+      <h2>结果速览</h2>
+      <ul>
+        <li><strong>RoboTwin 2.0 平均成功率达到 93.38%。</strong> 干净场景为 93.20%，随机化场景为 93.56%；FastWAM 平均为 91.83%，差距约 1.55 个百分点。</li>
+        <li><strong>LIBERO 上达到 98.4%。</strong> 这一成绩与带额外策略预训练的强模型接近；更难的 LIBERO-Plus 上，FLUX.2 4B 版本达到 83.1%，FastWAM 为 51.5%。</li>
+        <li><strong>真实双臂机器人平均成功率为 84.5%。</strong> 四项任务每项 100 条训练轨迹、共 100 次测试；FastWAM 为 79.0%，π0.5 为 72.3%。</li>
+        <li><strong>相对完整视频基线，延迟降到约四分之一。</strong> A6000 上从 1081 ms 降到 263 ms；计算量从 63.65 降到 9.72 TFLOPs，约为六分之一。</li>
+        <li><strong>编辑先验确实贡献了鲁棒性。</strong> LIBERO-Plus 上三种编辑骨干都超过 FastWAM；FLUX.2 从 4B 扩到 9B 后平均从 83.1% 升到 85.2%，但并非所有扰动维度都单调变好。</li>
+      </ul>
+
+      <h2>如何解读这些结果</h2>
+      <ul>
+        <li><strong>最强证据是效率与部署性能同时成立。</strong> 论文没有只报告 FLOPs，也在真实机器人上比 FastWAM 高 5.5 个百分点，说明压缩中间表征并未明显牺牲控制。</li>
+        <li><strong>LIBERO-Plus 的提升最有说服力。</strong> 同样不使用额外策略预训练，FLUX.2 4B 的 83.1% 明显高于 FastWAM 的 51.5%，支持“编辑预训练更关注任务相关变化”。</li>
+        <li><strong>但标准 LIBERO 已接近饱和。</strong> 多个方法都在 97%–99% 区间，98.4% 更像“保持竞争力”，不能单独证明架构明显优越。</li>
+        <li><strong>注意力图只是支持性证据。</strong> 聚焦被操作物、容器和接触区域符合故事，但注意力集中本身不能证明这些缓存导致了性能提升。</li>
+      </ul>
+
+      <h2>局限与开放问题</h2>
+      <ul>
+        <li><strong>论文没有单列 limitations。</strong> 以下几点是基于实验范围和方法设计的推断，不是作者明确写出的结论。</li>
+        <li><strong>“端点编辑”可能丢失路径约束。</strong> 避障、动态交互或必须按顺序完成的任务，终点相同但可行轨迹不同；单帧变化未必足够表达过程。</li>
+        <li><strong>真实世界规模仍小。</strong> 只有一个双臂平台、四种任务，每种 100 条轨迹；跨机器人形态、场景和长时间部署的泛化尚未验证。</li>
+        <li><strong>主要比较来自作者统一实现与有限硬件条件。</strong> 263 ms 是 A6000 上的结果，真实闭环频率还取决于动作去噪步数、传感器和控制栈。</li>
+        <li><strong>对更强骨干的依赖带来新的成本。</strong> 9B 编辑模型只把 LIBERO-Plus 从 83.1% 提到 85.2%，收益是否值得显存、训练和部署成本仍需评估。</li>
+        <li><strong>还缺少更直接的因果消融。</strong> 论文比较了多种骨干与统一模型，但若能控制参数量并替换编辑预训练目标，会更清楚地区分“编辑先验”与“更强模型”的贡献。</li>
+      </ul>
+
+      <h2>一句话带走</h2>
+      <ul>
+        <li><strong>ImageWAM 的价值在于重新定义了“先想后做”。</strong> 机器人不一定要想象一整段未来视频；知道当前画面应按指令发生什么局部变化，可能已经足以指导行动，而且更快、更稳。</li>
+      </ul>
+    </article>
+  </main>
+</body>
+</html>

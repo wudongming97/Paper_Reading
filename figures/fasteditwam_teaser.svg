@@ -1,0 +1,150 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <marker id="arrowBlue" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto">
+      <path d="M1,1 L12,7 L1,13 Z" fill="#073b7a"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto">
+      <path d="M2,2 L14,8 L2,14 Z" fill="#d20a0a"/>
+    </marker>
+    <linearGradient id="boxBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eff6ff"/>
+    </linearGradient>
+    <linearGradient id="boxGreen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#edf8f1"/>
+    </linearGradient>
+    <style>
+      text { font-family: "PingFang SC", "Heiti SC", "Microsoft YaHei", Arial, sans-serif; letter-spacing: 0; }
+      .title { font-size: 46px; font-weight: 900; fill: #050505; }
+      .section { font-size: 29px; font-weight: 900; fill: #050505; }
+      .label { font-size: 22px; font-weight: 800; fill: #050505; }
+      .boxText { font-size: 27px; font-weight: 900; fill: #072c69; }
+      .small { font-size: 19px; font-weight: 700; fill: #222; }
+      .redTitle { font-size: 26px; font-weight: 900; fill: #c40000; }
+      .redText { font-size: 25px; font-weight: 900; fill: #c40000; }
+      .blueStroke { stroke: #073b7a; stroke-width: 3; }
+      .redStroke { stroke: #d20a0a; stroke-width: 4; }
+      .thinBlue { stroke: #073b7a; stroke-width: 4; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#ffffff"/>
+  <text x="800" y="58" text-anchor="middle" class="title">WAM 与 FastEditWAM 的视觉监督差异</text>
+
+  <text x="44" y="112" class="section">（a）WAM：视频生成模型，多帧预测</text>
+  <text x="44" y="498" class="section">（b）FastEditWAM：图像编辑模型，单帧预测</text>
+
+  <line x1="36" y1="454" x2="1564" y2="454" stroke="#111" stroke-width="2.2"/>
+
+  <!-- Row A labels and observation -->
+  <text x="58" y="184" class="label">当前观测</text>
+  <g transform="translate(186 144)">
+    <rect x="0" y="0" width="128" height="92" rx="12" fill="#fff" class="blueStroke"/>
+    <rect x="24" y="18" width="34" height="28" rx="5" fill="#eef3ff" stroke="#073b7a" stroke-width="2"/>
+    <rect x="70" y="18" width="34" height="28" rx="5" fill="#f8fbff" stroke="#073b7a" stroke-width="2"/>
+    <circle cx="42" cy="66" r="15" fill="#4674bd"/>
+    <path d="M76 70 C90 48, 112 48, 124 68" fill="none" stroke="#073b7a" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <path d="M340 190 H420" fill="none" class="thinBlue" marker-end="url(#arrowBlue)"/>
+
+  <g transform="translate(430 124)">
+    <rect x="0" y="0" width="286" height="132" rx="12" fill="url(#boxBlue)" class="blueStroke"/>
+    <g transform="translate(30 28)">
+      <circle cx="14" cy="18" r="5" fill="#073b7a"/>
+      <circle cx="62" cy="18" r="5" fill="#073b7a"/>
+      <circle cx="38" cy="58" r="5" fill="#073b7a"/>
+      <circle cx="14" cy="82" r="5" fill="#073b7a"/>
+      <circle cx="62" cy="82" r="5" fill="#073b7a"/>
+      <path d="M14 18 L62 18 L62 82 L14 82 Z M14 18 L38 58 L62 18 M14 82 L38 58 L62 82" fill="none" stroke="#073b7a" stroke-width="3"/>
+    </g>
+    <text x="172" y="54" text-anchor="middle" class="boxText">视频生成</text>
+    <text x="172" y="91" text-anchor="middle" class="boxText">视觉专家</text>
+  </g>
+
+  <path d="M734 190 H814" fill="none" class="thinBlue" marker-end="url(#arrowBlue)"/>
+
+  <g transform="translate(832 116)">
+    <rect x="0" y="0" width="108" height="148" rx="12" fill="url(#boxBlue)" class="blueStroke"/>
+    <path d="M24 104 L48 72 L74 94 L94 58" fill="none" stroke="#073b7a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="90" cy="52" r="8" fill="#f5b929"/>
+    <text x="54" y="176" text-anchor="middle" class="small">t+1</text>
+  </g>
+  <g transform="translate(966 116)">
+    <rect x="0" y="0" width="108" height="148" rx="12" fill="url(#boxBlue)" class="blueStroke"/>
+    <path d="M24 104 L48 80 L74 98 L94 64" fill="none" stroke="#073b7a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="90" cy="58" r="8" fill="#f5b929"/>
+    <text x="54" y="176" text-anchor="middle" class="small">t+2</text>
+  </g>
+  <g transform="translate(1100 116)">
+    <rect x="0" y="0" width="108" height="148" rx="12" fill="url(#boxBlue)" class="blueStroke"/>
+    <path d="M24 104 L48 88 L74 100 L94 70" fill="none" stroke="#073b7a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="90" cy="64" r="8" fill="#f5b929"/>
+    <text x="54" y="176" text-anchor="middle" class="small">t+3</text>
+  </g>
+  <text x="1246" y="190" font-size="34" font-weight="900" fill="#073b7a">···</text>
+
+  <path d="M1286 190 H1346" fill="none" class="thinBlue" marker-end="url(#arrowBlue)"/>
+
+  <g transform="translate(1364 112)">
+    <rect x="0" y="0" width="184" height="164" rx="12" fill="#fff" class="redStroke"/>
+    <path d="M92 28 L130 96 H54 Z" fill="#d20a0a"/>
+    <rect x="88" y="48" width="8" height="32" rx="4" fill="#fff"/>
+    <circle cx="92" cy="88" r="5" fill="#fff"/>
+    <text x="30" y="122" class="redTitle">局限：</text>
+    <text x="30" y="154" class="redText">多帧预测耗时</text>
+  </g>
+
+  <path d="M812 328 H1188" fill="none" stroke="#d20a0a" stroke-width="3" stroke-dasharray="10 9"/>
+  <text x="1000" y="364" text-anchor="middle" class="redText">训练需要同时对齐多个未来视觉目标</text>
+
+  <!-- Row B labels and observation -->
+  <text x="58" y="570" class="label">当前观测</text>
+  <g transform="translate(186 530)">
+    <rect x="0" y="0" width="128" height="92" rx="12" fill="#fff" stroke="#0f7c5c" stroke-width="3"/>
+    <rect x="24" y="18" width="34" height="28" rx="5" fill="#edf8f1" stroke="#0f7c5c" stroke-width="2"/>
+    <rect x="70" y="18" width="34" height="28" rx="5" fill="#fff9e9" stroke="#0f7c5c" stroke-width="2"/>
+    <circle cx="42" cy="66" r="15" fill="#4ab58a"/>
+    <path d="M76 70 C90 48, 112 48, 124 68" fill="none" stroke="#0f7c5c" stroke-width="6" stroke-linecap="round"/>
+  </g>
+
+  <path d="M340 576 H420" fill="none" class="thinBlue" marker-end="url(#arrowBlue)"/>
+
+  <g transform="translate(430 510)">
+    <rect x="0" y="0" width="286" height="132" rx="12" fill="url(#boxGreen)" stroke="#0f7c5c" stroke-width="3"/>
+    <g transform="translate(28 34)">
+      <rect x="0" y="18" width="78" height="56" rx="9" fill="#fff" stroke="#0f7c5c" stroke-width="3"/>
+      <circle cx="39" cy="46" r="16" fill="none" stroke="#0f7c5c" stroke-width="4"/>
+    </g>
+    <text x="178" y="54" text-anchor="middle" font-size="27" font-weight="900" fill="#0f5f49">图像编辑</text>
+    <text x="178" y="91" text-anchor="middle" font-size="27" font-weight="900" fill="#0f5f49">视觉专家</text>
+  </g>
+
+  <path d="M734 576 H814" fill="none" class="thinBlue" marker-end="url(#arrowBlue)"/>
+
+  <g transform="translate(844 500)">
+    <rect x="0" y="0" width="238" height="152" rx="14" fill="url(#boxGreen)" stroke="#0f7c5c" stroke-width="4"/>
+    <path d="M54 108 L100 68 L146 96 L194 48" fill="none" stroke="#0f7c5c" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="188" cy="42" r="11" fill="#f5b929"/>
+    <text x="119" y="184" text-anchor="middle" class="small">t+1</text>
+  </g>
+
+  <path d="M1110 576 H1208" fill="none" stroke="#d20a0a" stroke-width="4" marker-end="url(#arrowRed)"/>
+
+  <g transform="translate(1230 494)">
+    <rect x="0" y="0" width="318" height="184" rx="12" fill="#fff" class="redStroke"/>
+    <path d="M159 22 L196 88 H122 Z" fill="#d20a0a"/>
+    <rect x="155" y="42" width="8" height="30" rx="4" fill="#fff"/>
+    <circle cx="159" cy="80" r="5" fill="#fff"/>
+    <text x="34" y="122" class="redTitle">改进：</text>
+    <text x="34" y="152" class="redText">单帧即可提供监督；</text>
+    <text x="34" y="180" class="redText">训练更高效</text>
+  </g>
+
+  <path d="M844 718 H1082" fill="none" stroke="#0f7c5c" stroke-width="3" stroke-dasharray="10 9"/>
+  <text x="963" y="754" text-anchor="middle" font-size="25" font-weight="900" fill="#0f7c5c">只预测一个特征帧</text>
+
+  <line x1="44" y1="822" x2="1556" y2="822" stroke="#111" stroke-width="2"/>
+  <text x="800" y="870" text-anchor="middle" font-size="28" font-weight="900" fill="#050505">关键差别：WAM 预测未来多帧，FastEditWAM 只预测单帧。</text>
+</svg>
