@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fast-WAM 中文图解：机器人一定要先“想象未来”吗？</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", system-ui, sans-serif;
+      max-width: 860px; margin: 2rem auto; padding: 0 1.5rem 4rem;
+      line-height: 1.7; color: #222; background: #fafafa;
+    }
+    h1, h2, h3 { font-weight: 650; letter-spacing: -0.01em; }
+    h1 { font-size: clamp(1.65rem, 4vw, 2.15rem); line-height: 1.25; margin-bottom: .55rem; }
+    h2 { font-size: 1.28rem; margin-top: 2.6rem; border-top: 1px solid #e8e5df; padding-top: 1.2rem; }
+    a { color: #3C5F8A; text-underline-offset: 3px; }
+    .meta { color: #666; font-size: .9rem; margin: 0 0 1.4rem; }
+    .tldr { font-size: 1.04rem; background: #F5EDD8; color: #453713; border-radius: 16px; padding: 1.2rem 1.35rem; }
+    ul { padding-left: 1.3rem; margin: .65rem 0 1.2rem; }
+    li { margin-bottom: .68rem; }
+    li strong { font-weight: 650; }
+    .diagram { margin: 2rem 0; }
+    .caption { font-size: .8rem; color: #707070; margin-top: .65rem; text-align: center; }
+    .panel { border-radius: 16px; padding: 1.2rem 1.3rem; display: flex; flex-direction: column; min-width: 0; }
+    .panel h4 { margin: 0 0 .4rem; font-size: 1rem; font-weight: 650; }
+    .panel .sub { font-size: .85rem; opacity: .78; margin-bottom: .7rem; }
+    .panel .label { font-size: .7rem; font-weight: 650; text-transform: uppercase; letter-spacing: .06em; opacity: .65; margin-top: .7rem; }
+    .panel .value { font-size: .92rem; }
+    .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: .55rem; align-items: stretch; }
+    .flow .arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: .74rem; opacity: .62; padding: 0 .15rem; text-align: center; }
+    .flow .arrow .glyph { font-size: 1.35rem; line-height: 1.1; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    .lavender { background: #E8E4F8; color: #2A1F5C; }
+    .mint { background: #D4EBE0; color: #173D2E; }
+    .peach { background: #F8E0CC; color: #5C2F12; }
+    .cream { background: #F5EDD8; color: #4A3A12; }
+    .rose { background: #F4D7D7; color: #5C2424; }
+    .sky { background: #D8E5F1; color: #1F3A5C; }
+    .metric { font-size: 1.65rem; font-weight: 700; line-height: 1.15; margin: .25rem 0; }
+    .note { font-size: .9rem; color: #555; border-left: 3px solid #D8E5F1; padding-left: .9rem; }
+    @media (max-width: 680px) {
+      body { margin-top: 1.2rem; padding: 0 1rem 3rem; }
+      .flow, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .flow .arrow { min-height: 2.6rem; }
+      .flow .arrow .glyph { transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Fast-WAM：机器人一定要先“想象未来”才能行动吗？</h1>
+  <p class="meta">Tianyuan Yuan、Zibin Dong、Yicheng Liu、Hang Zhao · arXiv:2603.16666 v2 · 2026-03-23</p>
+  <p class="tldr"><strong>一句话结论：</strong>Fast-WAM 训练时仍学习“接下来画面会怎样变化”，但执行时不再生成未来视频，而是直接输出动作。它在两个仿真基准上接近甚至优于“先想象、再执行”的版本，推理只需 190 ms。论文最重要的观点是：视频预测的价值可能主要在于训练出更懂物理互动的内部表示，而不是让机器人运行时真的把未来画出来。</p>
+
+  <h2>先补三块背景</h2>
+  <ul>
+    <li><strong>VLA 是“看、听指令、直接动”。</strong>视觉—语言—动作模型把相机画面和文字指令直接映射成机械臂动作，例如“拿起杯子”→关节轨迹。</li>
+    <li><strong>WAM 多加了一步“世界会怎样变化”。</strong>世界动作模型先学习或生成未来画面，再据此决定动作；直觉上，它比只看当前画面的策略更懂物理后果。</li>
+    <li><strong>扩散式视频生成很慢。</strong>模型通常要从噪声反复去噪，逐步得到未来视频。画面未必需要展示给人看，但计算成本仍然存在。</li>
+    <li><strong>动作块是一次预测多步动作。</strong>本文一次生成长度为 32 的动作序列，而不是每个时刻只预测一个控制量。</li>
+  </ul>
+
+  <h2>问题：WAM 的收益到底来自哪里？</h2>
+  <ul>
+    <li><strong>现有设计把两个因素绑在了一起。</strong>它们训练时做视频预测，测试时也生成未来视频，因此无法判断哪一步真正带来动作性能。</li>
+    <li><strong>“会预测”不等于“每次都要预测出来”。</strong>就像学过物理的人接杯子时不会先画一段未来动画，知识可能已经压进了内部表示。</li>
+    <li><strong>机器人控制对延迟很敏感。</strong>等待未来视频完成去噪会拖慢闭环反应；环境已变化时，旧动作更容易失效。</li>
+  </ul>
+
+  <div class="diagram">
+    <div class="grid-2">
+      <div class="panel rose">
+        <h4>传统：想象后执行</h4>
+        <div class="sub">测试时也支付视频生成成本</div>
+        <div class="label">计算路径</div><div class="value">当前画面 → 多步去噪 → 未来视频 → 动作</div>
+        <div class="label">主要疑问</div><div class="value">未来视频真带来额外决策信息了吗？</div>
+      </div>
+      <div class="panel mint">
+        <h4>Fast-WAM：学过即可</h4>
+        <div class="sub">训练保留世界建模，测试删掉视频分支</div>
+        <div class="label">计算路径</div><div class="value">当前画面 → 世界表征 → 动作</div>
+        <div class="label">直接收益</div><div class="value">少一次昂贵的未来视频生成</div>
+      </div>
+    </div>
+    <div class="caption">核心拆分：训练期的“学会预测”与测试期的“显式生成”是两件事。</div>
+  </div>
+
+  <h2>核心做法：训练双任务，推理单路径</h2>
+  <ul>
+    <li><strong>视频骨干来自 Wan2.2-5B。</strong>预训练视频 Diffusion Transformer（DiT）负责提取世界表征；文字由其 T5 编码器处理，图像由视频 VAE 压成潜变量。</li>
+    <li><strong>另接一个 10 亿参数动作专家。</strong>完整模型约 60 亿参数。视频分支与动作分支采用共享注意力的 Mixture-of-Transformer 结构。</li>
+    <li><strong>两个任务共享当前画面锚点。</strong>训练时，未来视频潜变量和动作 token 都能读取第一帧与语言，但动作 token 不能偷看真实未来。</li>
+    <li><strong>总损失把动作与视频并列。</strong>可概括为 <code>L = L_action + λL_video</code>；两项都使用 flow matching，从噪声学习恢复目标。</li>
+    <li><strong>推理时删除未来视频 token。</strong>视频骨干只对当前观测做一次前向编码，再由动作专家用 10 步去噪生成动作块；结构细节可对照论文 Figure 2。</li>
+  </ul>
+
+  <div class="diagram">
+    <div class="flow">
+      <div class="panel lavender">
+        <h4>输入上下文</h4>
+        <div class="sub">当前多相机画面 + 语言指令</div>
+        <div class="label">图像</div><div class="value">VAE 压缩为第一帧潜变量</div>
+        <div class="label">语言</div><div class="value">T5 编码</div>
+      </div>
+      <div class="arrow"><span class="glyph">→</span><span>单次编码</span></div>
+      <div class="panel mint">
+        <h4>潜在世界表征</h4>
+        <div class="sub">被视频预测任务塑造过</div>
+        <div class="label">训练时</div><div class="value">同时学习未来视频</div>
+        <div class="label">测试时</div><div class="value">不生成任何未来帧</div>
+      </div>
+      <div class="arrow"><span class="glyph">→</span><span>动作去噪</span></div>
+      <div class="panel peach">
+        <h4>动作块</h4>
+        <div class="sub">动作专家 DiT</div>
+        <div class="label">长度</div><div class="value">32 步动作</div>
+        <div class="label">推理</div><div class="value">10 次去噪</div>
+      </div>
+    </div>
+    <div class="caption">Fast-WAM 的测试时路径：保留“懂世界”的表示，跳过“画未来”的过程。</div>
+  </div>
+
+  <h2>论文怎样把两个因素分开？</h2>
+  <ul>
+    <li><strong>Fast-WAM 是主方案。</strong>训练时有视频共训练，测试时不生成未来视频。</li>
+    <li><strong>Joint 版本共同去噪视频与动作。</strong>它代表一类已有 WAM：未来视频 token 和动作 token 在同一生成过程中交互。</li>
+    <li><strong>IDM 版本先视频、后动作。</strong>它先生成未来表征，再通过逆动力学式模块预测导致该未来的动作。</li>
+    <li><strong>无视频共训练版本是关键对照。</strong>它保留 Fast-WAM 的结构和推理流程，只删除训练期的视频损失，因此能单独测量视频监督的价值。</li>
+  </ul>
+
+  <div class="diagram">
+    <div class="grid-3">
+      <div class="panel lavender"><h4>Joint</h4><div class="sub">训练有视频 · 测试生成未来</div><div class="label">RoboTwin</div><div class="value">90.6%</div><div class="label">LIBERO</div><div class="value">98.5%</div></div>
+      <div class="panel sky"><h4>IDM</h4><div class="sub">训练有视频 · 测试先视频后动作</div><div class="label">RoboTwin</div><div class="value">91.3%</div><div class="label">LIBERO</div><div class="value">98.0%</div></div>
+      <div class="panel mint"><h4>Fast-WAM</h4><div class="sub">训练有视频 · 测试不生成未来</div><div class="label">RoboTwin</div><div class="value">91.8%</div><div class="label">LIBERO</div><div class="value">97.6%</div></div>
+    </div>
+    <div class="panel rose" style="margin-top:1rem"><h4>删除视频共训练</h4><div class="sub">推理结构不变，只拿掉训练时的视频预测目标</div><div class="grid-2"><div><div class="label">RoboTwin</div><div class="metric">83.8%</div></div><div><div class="label">LIBERO</div><div class="metric">93.5%</div></div></div></div>
+    <div class="caption">显式未来生成带来的差距很小；删除视频共训练带来的下降明显更大。</div>
+  </div>
+
+  <h2>结果怎么读？</h2>
+  <ul>
+    <li><strong>RoboTwin 平均成功率为 91.8%。</strong>Fast-WAM 无需具身预训练，接近使用预训练的 LingBot-VA（92.2%），并高于 Motus（87.8%）。</li>
+    <li><strong>LIBERO 平均成功率为 97.6%。</strong>它接近 Motus 的 97.7% 和 LingBot-VA 的 98.5%，同时略高于 π<sub>0.5</sub> 的 96.9%。</li>
+    <li><strong>最有说服力的是消融差距。</strong>拿掉视频共训练后，RoboTwin 下降 8.0 个百分点，LIBERO 下降 4.1 个百分点；远大于三种有视频训练方案之间的差距。</li>
+    <li><strong>真实折毛巾任务重复了同一趋势。</strong>无视频共训练版本成功率只有 10%，且完成最慢；有视频训练的三个版本彼此更接近。</li>
+    <li><strong>190 ms 是部署层面的关键数字。</strong>Fast-WAM 比 IDM 版本的 810 ms 快约 4.3 倍；延迟均在单张 NVIDIA RTX 5090D V2 上测得。</li>
+  </ul>
+
+  <h2>它真正新在哪里？</h2>
+  <ul>
+    <li><strong>创新重点是“拆因果”，不只是做快模型。</strong>VPP、UVA 等工作也减少或绕过测试时视频合成，但本文用统一骨干、token 化和训练配置做受控变体。</li>
+    <li><strong>它把 WAM 重新解释为表示学习器。</strong>视频预测目标像一位训练教练，迫使模型理解物体运动、接触和时间结构；比赛时教练不必上场。</li>
+    <li><strong>它连接了 WAM 与直接策略。</strong>训练方式像 WAM，测试接口却像 VLA：从当前观测与指令直接得到动作。</li>
+  </ul>
+
+  <h2>限制与开放问题</h2>
+  <ul>
+    <li><strong>结论是“显式想象较不重要”，不是“永远无用”。</strong>当前任务可能主要依赖短期反应；开放世界规划、遮挡推理或多步失败恢复仍可能需要显式未来搜索。</li>
+    <li><strong>真实世界验证只有一种任务。</strong>折毛巾很难，但单任务不足以覆盖刚体操作、导航、人机协作与快速动态控制。</li>
+    <li><strong>比较仍受具体实现约束。</strong>作者尽量统一设置，但 Joint、IDM 与 Fast-WAM 的信息流天然不同，不能视为完全无混杂的随机实验。</li>
+    <li><strong>190 ms 仍依赖高端 GPU。</strong>结果来自 RTX 5090D V2；在常见机器人边缘计算平台上是否仍能实时，需要另测。</li>
+    <li><strong>预训练与规模效应尚未展开。</strong>作者明确把更大数据和模型规模列为未来方向；显式想象的价值也可能随规模改变。</li>
+  </ul>
+
+  <p class="note"><strong>我的判断：</strong>这篇论文最值得记住的不是某个排行榜名次，而是一个设计原则：昂贵的生成目标可以只在训练时充当“理解世界的练习题”，部署时未必需要把练习过程完整重演。证据很有启发性，但离“所有机器人都不需要规划或想象”还很远。</p>
+
+  <h2>原文入口</h2>
+  <ul>
+    <li><strong>论文页面。</strong> <a href="https://arxiv.org/abs/2603.16666">arXiv 摘要与 PDF</a></li>
+    <li><strong>网页版全文。</strong> <a href="https://arxiv.org/html/2603.16666v2">arXiv HTML v2</a></li>
+    <li><strong>项目页面。</strong> <a href="https://yuantianyuan01.github.io/FastWAM/">Fast-WAM Project Page</a></li>
+  </ul>
+</body>
+</html>

@@ -126,6 +126,60 @@
       "arxiv": "https://arxiv.org/abs/2606.11176",
       "pdf": "https://arxiv.org/pdf/2606.11176",
       "tldr": "Data2Story 用多智能体虚拟 newsroom 把原始数据变成可读的多媒体新闻网页，并用 Inspector 将 claim 绑定到代码、数据或外部来源。"
+    },
+    {
+      "category": "WAM",
+      "slug": "imagewam-2606-19531",
+      "title": "ImageWAM: Do World Action Models Really Need Video Generation, or Just Image Editing?",
+      "subtitle": "Zhang et al., SJTU / EIT / Tencent Robotics X, 2026",
+      "date": "2026-06-17",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "image-editing",
+        "kv-cache"
+      ],
+      "source": "https://zhangwenyao1.github.io/ImageWAM/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2606.19531",
+      "pdf": "https://arxiv.org/pdf/2606.19531",
+      "tldr": "ImageWAM 用图像编辑模型的内部 KV 缓存表达“按指令应发生的视觉变化”，无需生成未来视频或目标图，就能更快地预测机器人动作。"
+    },
+    {
+      "category": "WAM",
+      "slug": "fast-wam-2603-16666",
+      "title": "Fast-WAM: Do World Action Models Need Test-time Future Imagination?",
+      "subtitle": "Yuan et al., Tsinghua / Galaxea AI, 2026",
+      "date": "2026-03-17",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "video-modeling",
+        "real-time-control"
+      ],
+      "source": "https://yuantianyuan01.github.io/FastWAM/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2603.16666",
+      "pdf": "https://arxiv.org/pdf/2603.16666",
+      "tldr": "Fast-WAM 训练时保留视频预测监督，部署时跳过未来视频生成，说明 WAM 的主要收益可能来自世界表征学习，而不是测试时显式想象。"
+    },
+    {
+      "category": "WAM",
+      "slug": "aha-wam-2606-09811",
+      "title": "AHA-WAM: Asynchronous Horizon-Adaptive World-Action Modeling with Observation-Guided Context Routing",
+      "subtitle": "Cai et al., SJTU / Shanghai AI Lab / Baidu AI Cloud, 2026",
+      "date": "2026-06-08",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "asynchronous-control",
+        "video-modeling"
+      ],
+      "source": "https://serene-sivy.github.io/aha-wam/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2606.09811",
+      "pdf": "https://arxiv.org/pdf/2606.09811",
+      "tldr": "AHA-WAM 将低频长时世界规划与高频短时动作执行解耦，并用观测引导路由与滚动记忆保持异步上下文新鲜。"
     }
   ]
 }

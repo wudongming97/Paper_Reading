@@ -54,7 +54,7 @@
             </span>
             <a class="category-link" href="#WAM" data-cat="WAM">
               <span>WAM</span>
-              <strong>1</strong>
+              <strong>3</strong>
             </a>
             <a class="category-link" href="#CV" data-cat="CV">
               <span>CV</span>
@@ -68,7 +68,7 @@
         </div>
         <div class="side-block muted">
           <h2>待补方向</h2>
-          <p>Infra · 训练与推理基础设施、VLA · 视觉-语言-动作、WAM · 世界模型 / 动作模型</p>
+          <p>Infra · 训练与推理基础设施、VLA · 视觉-语言-动作</p>
         </div>
       </aside>
 
@@ -153,9 +153,9 @@
       <div class="section-heading">
         <div>
           <p class="eyebrow">WAM</p>
-          <h2>世界动作模型</h2>
+          <h2>世界模型 / 动作模型</h2>
         </div>
-        <span>1 篇</span>
+        <span>3 篇</span>
       </div>
         <ol class="paper-list">
         <li>
@@ -165,6 +165,28 @@
               <h3>ImageWAM: Do World Action Models Really Need Video Generation, or Just Image Editing?</h3>
               <p class="meta">Zhang et al., SJTU / EIT / Tencent Robotics X, 2026</p>
               <p class="tldr">ImageWAM 用图像编辑模型的内部 KV 缓存表达“按指令应发生的视觉变化”，无需生成未来视频或目标图，就能更快地预测机器人动作。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        <li>
+          <a class="paper-card" href="WAM/aha-wam-2606-09811/">
+            <time datetime="2026-06-08">2026</time>
+            <div class="paper-main">
+              <h3>AHA-WAM: Asynchronous Horizon-Adaptive World-Action Modeling with Observation-Guided Context Routing</h3>
+              <p class="meta">Cai et al., SJTU / Shanghai AI Lab / Baidu AI Cloud, 2026</p>
+              <p class="tldr">AHA-WAM 将低频长时世界规划与高频短时动作执行解耦，并用观测引导路由与滚动记忆保持异步上下文新鲜。</p>
+            </div>
+            <span class="paper-arrow" aria-hidden="true">→</span>
+          </a>
+        </li>
+        <li>
+          <a class="paper-card" href="WAM/fast-wam-2603-16666/">
+            <time datetime="2026-03-17">2026</time>
+            <div class="paper-main">
+              <h3>Fast-WAM: Do World Action Models Need Test-time Future Imagination?</h3>
+              <p class="meta">Yuan et al., Tsinghua / Galaxea AI, 2026</p>
+              <p class="tldr">Fast-WAM 训练时保留视频预测监督，部署时跳过未来视频生成，说明 WAM 的主要收益可能来自世界表征学习，而不是测试时显式想象。</p>
             </div>
             <span class="paper-arrow" aria-hidden="true">→</span>
           </a>

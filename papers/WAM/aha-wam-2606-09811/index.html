@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AHA-WAM: Asynchronous Horizon-Adaptive World-Action Modeling with Observation-Guided Context Routing — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://serene-sivy.github.io/aha-wam/" target="_blank" rel="noopener">Project</a><a href="https://arxiv.org/abs/2606.09811" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2606.09811" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>AHA-WAM：让世界模型慢慢规划，让机器人快速反应</h1>
+<p class="meta">Jisong Cai、Long Ling、Shiwei Chu 等 · arXiv:2606.09811 v1 · 2026-06-08</p>
+<p class="tldr"><strong>一句话结论：</strong>AHA-WAM 把机器人策略拆成两个不同节奏的系统：大型视频模型低频运行，形成可复用的长时规划上下文；较小的动作模型高频读取最新观测并输出短动作。通过解决“旧规划与新现场不一致”的问题，它在 RoboTwin 达到 92.80%，动作回路从 Fast-WAM 的 5.26 Hz 提升到 24.17 Hz；蒸馏版达到 56.95 Hz。</p>
+
+<h2>先补背景</h2>
+<ul>
+<li><strong>WAM 同时学习世界与动作。</strong>世界动作模型（World-Action Model）既学习画面如何随动作变化，也学习机器人应当怎么动；视频监督给策略补充物理常识。</li>
+<li><strong>闭环控制意味着不断重看现场。</strong>机器人执行一点动作，就用新画面和关节状态修正下一步。更新越慢，越容易对已经变化的世界做出过时反应。</li>
+<li><strong>动作与规划不需要同一时间尺度。</strong>“把毛巾折好”是长时目标，而手指位置和夹爪力度需要快速纠正。一个模型用同样节奏处理两者，会浪费计算。</li>
+<li><strong>KV 缓存是 Transformer 的工作记忆。</strong>它保存历史 token 的 key/value 表示，让模型复用过去计算，而不用每次从头处理全部历史。</li>
+</ul>
+
+<h2>问题：同步 WAM 把两只时钟绑死了</h2>
+<ul>
+<li><strong>视频分支被迫关注相邻帧的小变化。</strong>短时间内画面高度相似；昂贵的视频模型花大量容量预测冗余细节，却没有把视野拉到更远。</li>
+<li><strong>动作分支又被视频计算拖慢。</strong>机械臂需要根据接触、滑动和偏差快速修正，但同步结构只能等待世界模型完成同一轮计算。</li>
+<li><strong>直接异步会产生“陈旧计划”。</strong>规划器算一次、执行器用多次固然快，可机器人已经移动，旧上下文可能与最新画面对不上。</li>
+</ul>
+<div class="diagram"><div class="grid-2">
+<div class="panel rose"><h4>同步 WAM</h4><div class="sub">世界预测与动作执行同频</div><div class="label">世界模型</div><div class="value">重复计算近邻帧</div><div class="label">动作回路</div><div class="value">被大模型延迟限制</div></div>
+<div class="panel mint"><h4>AHA-WAM</h4><div class="sub">长时规划与短时动作分频</div><div class="label">慢系统</div><div class="value">偶尔刷新长期上下文</div><div class="label">快系统</div><div class="value">持续读取最新现场并纠偏</div></div>
+</div><div class="caption">设计变化不是简单删掉视频模型，而是把它移出每次动作更新的关键路径。</div></div>
+
+<h2>核心架构：低频 Planner + 高频 Executor</h2>
+<ul>
+<li><strong>视频 DiT 充当世界规划器。</strong>它由 Wan2.2-5B 初始化，观察更长的 64 步时间范围，产生每层可复用的规划 KV 上下文。</li>
+<li><strong>动作 DiT 充当执行器。</strong>约 10.2 亿参数的动作专家每次生成 16 步动作块，直接接收最新本体状态，并通过联合注意力读取规划上下文。</li>
+<li><strong>两个分支仍然联合训练。</strong>总目标是 <code>L = L_action + λL_video</code>，两项均使用 flow matching；测试时不解码未来视频。</li>
+<li><strong>规划计算被多次动作更新分摊。</strong>一次昂贵的视频 DiT 前向可以服务多个动作块，视频模型不再卡住高频控制回路。</li>
+</ul>
+<div class="diagram"><div class="flow">
+<div class="panel lavender"><h4>过去与当前观测</h4><div class="sub">相机、语言、关节状态</div><div class="label">历史</div><div class="value">最多 6 帧滚动记忆</div><div class="label">最新现场</div><div class="value">每个动作块重新读取</div></div>
+<div class="arrow"><span class="glyph">→</span><span>低频规划</span></div>
+<div class="panel sky"><h4>世界规划上下文</h4><div class="sub">视频 DiT 的逐层 KV 表示</div><div class="label">视野</div><div class="value">64 步长时范围</div><div class="label">复用</div><div class="value">跨多个动作更新</div></div>
+<div class="arrow"><span class="glyph">→</span><span>OVCR 对齐</span></div>
+<div class="panel peach"><h4>短动作块</h4><div class="sub">动作 DiT 高频闭环执行</div><div class="label">长度</div><div class="value">16 步</div><div class="label">反馈</div><div class="value">最新视觉 + 本体状态</div></div>
+</div><div class="caption">两只时钟：规划器看得远、跑得慢；执行器看得新、跑得快。</div></div>
+
+<h2>三个机制让异步真正可用</h2>
+<ul>
+<li><strong>OVCR 用最新画面改写旧上下文。</strong>32 个轻量查询先压缩当前视觉，再从规划 KV 中找出相关内容，并用带门控的残差更新生成本动作块专属上下文。</li>
+<li><strong>随机时间偏移训练消除“对齐依赖”。</strong>训练时将动作块起点随机平移 <code>δ∈[0, hₐ)</code>，让执行器学会在规划周期的任意相位读取上下文。</li>
+<li><strong>滚动 KV 记忆保留已发生的事情。</strong>FIFO 记忆跨规划刷新保存最近历史，例如物体被移动或子目标已完成，避免每次规划只看当前一帧。</li>
+<li><strong>三者解决不同问题。</strong>记忆负责“别忘过去”，OVCR 负责“对准现在”，偏移训练负责“适应不同时间位置”。</li>
+</ul>
+<div class="diagram"><div class="grid-3">
+<div class="panel lavender"><h4>Rolling KV Memory</h4><div class="sub">保存慢规划器的历史状态</div><div class="label">解决</div><div class="value">长期信息遗忘</div><div class="label">独立消融</div><div class="value">91.01%</div></div>
+<div class="panel mint"><h4>OVCR</h4><div class="sub">最新观测路由并修正规划上下文</div><div class="label">解决</div><div class="value">上下文陈旧</div><div class="label">独立消融</div><div class="value">91.47%</div></div>
+<div class="panel peach"><h4>Offset Training</h4><div class="sub">随机化规划—执行相位</div><div class="label">解决</div><div class="value">固定时间对齐过拟合</div><div class="label">完整系统</div><div class="value">92.80%</div></div>
+</div><div class="caption">消融表明“仅仅异步”会跌到 88.60%；记忆、路由和时间训练必须配套。</div></div>
+
+<h2>速度还来自系统优化与蒸馏</h2>
+<ul>
+<li><strong>CUDA 优化把 10 步采样压到 41.37 ms。</strong>作者使用 TensorRT、CUDA Graph，并移除循环内重复计算和缓冲区复制；PyTorch eager 原本需要 415.77 ms。</li>
+<li><strong>Flash 版把 10 步去噪蒸馏成 2 步。</strong>ODE 蒸馏让学生直接接近教师最终动作，将延迟进一步降到 17.56 ms。</li>
+<li><strong>架构收益与工程收益应分开看。</strong>异步设计移除了视频 DiT 的关键路径；24.17 Hz 和 56.95 Hz 还依赖专门 CUDA 部署与蒸馏。</li>
+</ul>
+<div class="diagram"><div class="grid-3">
+<div class="panel rose"><h4>Fast-WAM</h4><div class="metric">190 ms</div><div class="value">5.26 Hz · 1.00×</div></div>
+<div class="panel sky"><h4>AHA-WAM</h4><div class="metric">41.37 ms</div><div class="value">24.17 Hz · 4.59×</div></div>
+<div class="panel mint"><h4>AHA-WAM-Flash</h4><div class="metric">17.56 ms</div><div class="value">56.95 Hz · 10.82×</div></div>
+</div><div class="caption">延迟在单张 NVIDIA RTX 5090D 上测量；Fast-WAM 数字采用其官方报告。</div></div>
+
+<h2>结果怎么读？</h2>
+<ul>
+<li><strong>RoboTwin 平均成功率为 92.80%。</strong>干净场景 93.40%，随机场景 92.20%；比无机器人预训练的 Fast-WAM 高 0.97 个百分点。</li>
+<li><strong>它略高于有大规模机器人预训练的 LingBot-VA。</strong>后者平均 92.20%，但 0.60 点差距很小，不宜解读为压倒性领先。</li>
+<li><strong>Flash 用少量性能换极低延迟。</strong>两步蒸馏版 RoboTwin 为 90.20%，比完整模型低 2.60 点，但速度超过两倍。</li>
+<li><strong>真实机器人四任务平均成功率为 78.33%。</strong>任务包括折毛巾、整理桌面、准备豆浆和收盘子；Fast-WAM 为 68.33%，π<sub>0.5</sub> 为 76.67%。</li>
+<li><strong>真实任务比较并非“零机器人预训练”。</strong>为稳定且公平部署，AHA-WAM 与 Fast-WAM 都先在 RoboCOIN 子集的 24,600 条、约 165 小时机器人轨迹上预训练，再用各任务约 120 条示范微调。</li>
+</ul>
+
+<h2>相对前作的新意</h2>
+<ul>
+<li><strong>相对 Fast-WAM，它不只跳过未来视频。</strong>Fast-WAM 每个动作更新仍运行视频骨干；AHA-WAM 将视频骨干低频化，并复用其逐层上下文。</li>
+<li><strong>相对 AsyncVLA，它把异步嵌进 WAM 内部。</strong>慢支路不是单纯给语义提示，而是真正学习长时视觉动力学，并逐层参与动作注意力。</li>
+<li><strong>相对同步 Joint WAM，它承认时间抽象不对称。</strong>世界规划适合长范围、低频率；物理纠偏适合短范围、高频率。</li>
+</ul>
+
+<h2>限制与开放问题</h2>
+<ul>
+<li><strong>“Horizon-Adaptive”不是在线选择时域。</strong>模型并不会测试时自动决定看多远；64 步规划、16 步动作等仍是人工设置的时间超参数。</li>
+<li><strong>模型更大而不是更轻。</strong>完整实例约 72.3 亿参数，其中记忆与路由模块约 12.2 亿；效率来自异步调度，而非减少总参数。</li>
+<li><strong>专用硬件优化影响速度结论。</strong>若没有 TensorRT、CUDA Graph 或 RTX 5090D，实际频率可能明显不同。</li>
+<li><strong>长时优势尚未被专门基准充分验证。</strong>RoboTwin 多数任务为短到中程，作者也承认需要专门的长时规划测试。</li>
+<li><strong>真实世界样本仍有限。</strong>四个任务、每项 30 次测试能说明可部署性，但不足以证明跨机器人、跨场景的普遍优势。</li>
+</ul>
+<p class="note"><strong>我的判断：</strong>这篇论文最有价值的地方，是把“世界模型应该多聪明”与“控制回路必须多快”从同一个计算预算里解耦。它像机器人版的 System 2 / System 1：慢系统规划、快系统反应。论文对上下文过时问题的处理很完整，但最高频率既是算法成果，也是重工程优化成果。</p>
+
+<h2>原文入口</h2>
+<ul>
+<li><strong>论文页面。</strong> <a href="https://arxiv.org/abs/2606.09811">arXiv 摘要与 PDF</a></li>
+<li><strong>网页版全文。</strong> <a href="https://arxiv.org/html/2606.09811v1">arXiv HTML v1</a></li>
+<li><strong>项目页面。</strong> <a href="https://serene-sivy.github.io/aha-wam/">AHA-WAM Project Page</a></li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>
