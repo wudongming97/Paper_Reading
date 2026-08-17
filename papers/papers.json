@@ -181,6 +181,27 @@
       "arxiv": "https://arxiv.org/abs/2606.09811",
       "pdf": "https://arxiv.org/pdf/2606.09811",
       "tldr": "AHA-WAM 将低频长时世界规划与高频短时动作执行解耦，并用观测引导路由与滚动记忆保持异步上下文新鲜。"
+    },
+    {
+      "category": "Embodied Report",
+      "slug": "ace-brain-0-2603-03198",
+      "title": "ACE-Brain-0: Spatial Intelligence as a Shared Scaffold for Universal Embodiments",
+      "subtitle": "Gong et al., ACE Robotics / SJTU et al., 2026",
+      "date": "2026-03-03",
+      "tags": [
+        "embodied-ai",
+        "spatial-intelligence",
+        "multimodal",
+        "model-merging",
+        "autonomous-driving",
+        "uav",
+        "robotics"
+      ],
+      "source": "https://ace-brain-team.github.io/ACE-Brain-0/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2603.03198",
+      "pdf": "https://arxiv.org/pdf/2603.03198",
+      "tldr": "ACE-Brain-0 将空间智能作为跨自动驾驶、无人机与机器人操作的共同底座：先训练空间专家，后分别训练领域专家，再用无数据模型合并统一知识，并以具身数据和 GRPO 继续对齐。"
     }
   ]
 }

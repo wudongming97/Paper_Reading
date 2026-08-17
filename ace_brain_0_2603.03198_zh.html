@@ -1,0 +1,88 @@
+<h1>ACE-Brain-0：用空间智能把不同“身体”接到同一个大脑上</h1>
+<p class="meta">Ziyang Gong、Zehang Luo、Anke Tang 等 · arXiv:2603.03198 v1 · 2026-03-03</p>
+<p class="tldr"><strong>一句话结论：</strong>ACE-Brain-0 想解决的不是“让一个模型学会很多任务”，而是“让它在自动驾驶、无人机和机器人操作这些身体不同、数据不同的领域之间不互相伤害”。作者把三维空间理解当作共同底座，先单独训各领域专家，再用无需原始数据的模型合并把知识汇到一个 8B 多模态模型中；最后用具身数据和 GRPO 强化学习补足交互能力。它在 24 个空间与具身相关基准上给出了强结果，但这仍主要是视觉语言推理与规划评测，而不是一个可直接驱动所有机器人本体的端到端控制器。</p>
+
+<h2>先补背景</h2>
+<ul>
+  <li><strong>“具身”不只是一台机械臂。</strong>这篇报告把自动驾驶、低空无人机和机器人操作都看作不同的 physical embodiments（物理载体）：它们的传感器、行动空间和任务不同，但都得理解真实三维世界。</li>
+  <li><strong>MLLM 是会看图和读指令的大语言模型。</strong>多模态大语言模型把图像或视频编码成 token，再与文字放入同一个 Transformer；它可以回答、规划或生成动作/轨迹形式的 token。</li>
+  <li><strong>统一训练有两种典型失败方式。</strong>把所有数据混在一起训练，来自不同领域的梯度会互相拉扯；逐个领域微调，后学的技能又会覆盖先学的技能，这叫灾难性遗忘。</li>
+  <li><strong>空间智能是作者选择的共同语言。</strong>不论是车判断哪条路可走、无人机定位目标，还是机械臂判断杯子的位置，本质都要处理物体、距离、视角和动作后果。</li>
+</ul>
+
+<h2>问题：共享一个模型，为什么反而可能更差？</h2>
+<ul>
+  <li><strong>各领域数据极不均衡。</strong>某些任务样本更多、更容易优化；混训时它们会淹没稀有但关键的具身样本，形成长尾问题。</li>
+  <li><strong>同一参数承受冲突的学习信号。</strong>驾驶偏向道路场景下的高层决策，机械臂偏向细粒度操作；强行用一套权重同时迎合它们，可能谁也学不好。</li>
+  <li><strong>顺序微调会把知识“写掉”。</strong>先空间、再驾驶、再无人机、再具身操作虽然容易实施，但后续训练常降低前面领域的能力。</li>
+  <li><strong>问题的核心是知识组织。</strong>作者的判断是，瓶颈不只是模型大小或数据总量，而是缺少一种既共享常识、又保留专长的训练结构。</li>
+</ul>
+<div class="diagram"><div class="grid-2">
+  <div class="panel rose"><h4>常见做法</h4><div class="sub">混训或顺序微调</div><div class="label">混训</div><div class="value">梯度干扰，专长被稀释</div><div class="label">顺序训</div><div class="value">后来的领域覆盖旧能力</div></div>
+  <div class="panel mint"><h4>ACE-Brain-0 的拆法</h4><div class="sub">先共享，再分工，后合流</div><div class="label">共享</div><div class="value">空间智能作为公共底座</div><div class="label">分工</div><div class="value">分别训练领域专家，再合并</div></div>
+</div><div class="caption">它要解决的是“通用性—专长”之间的张力，而非只把更多数据塞给一个模型。</div></div>
+
+<h2>核心想法：Scaffold → Specialize → Reconcile</h2>
+<ul>
+  <li><strong>Scaffold：先搭空间脚手架。</strong>从 Qwen3-VL 出发，经通用指令数据激活后，用大规模空间数据训练空间专家。它学习的是跨领域可复用的三维关系与视角推理。</li>
+  <li><strong>Specialize：让专家各自成长。</strong>驾驶专家和无人机专家都以空间专家为起点，但在各自数据上独立微调；隔离训练避免训练过程中的直接梯度冲突。</li>
+  <li><strong>Reconcile：最后才让专家会合。</strong>作者不再混合原始训练数据，而是把多个专家模型的权重更新做“数据无关”的优化合并，试图保住各自擅长的方向。</li>
+  <li><strong>具身交互是合并后的进一步对齐。</strong>统一模型再用第一视角与具身交互数据做监督微调；可选的 GRPO 则用同题多次采样的相对奖励，强化复杂空间任务中的决策质量。</li>
+</ul>
+<div class="diagram"><div class="flow">
+  <div class="panel lavender"><h4>共享空间底座</h4><div class="sub">Scaffold</div><div class="label">学什么</div><div class="value">距离、关系、视角、3D 心智空间</div></div>
+  <div class="arrow"><span class="glyph">→</span><span>独立微调</span></div>
+  <div class="panel sky"><h4>领域专家</h4><div class="sub">Specialize</div><div class="label">领域</div><div class="value">驾驶 · 无人机 · 空间</div></div>
+  <div class="arrow"><span class="glyph">→</span><span>无数据合并</span></div>
+  <div class="panel peach"><h4>统一具身大脑</h4><div class="sub">Reconcile + 具身对齐</div><div class="label">输出</div><div class="value">问答、规划、轨迹或动作 token</div></div>
+</div><div class="caption">先让共享部分稳定，再允许专长分叉，最后处理“如何合流”。</div></div>
+
+<h2>模型和训练究竟怎么做？</h2>
+<ul>
+  <li><strong>架构本身是标准的自回归 MLLM。</strong>视觉编码器把单图、多视角图或视频转成特征；MLP 投影器把特征对齐到语言模型空间；文本指令和视觉 token 一起送入 8B LLM decoder。</li>
+  <li><strong>同一接口覆盖多种任务。</strong>作者把输入统一写成观察 <code>o</code> 加条件 <code>c</code>，模型预测输出 <code>y</code>；<code>y</code> 可以是文字回答、空间描述、推理轨迹、规划轨迹或动作序列。</li>
+  <li><strong>合并关注的是“任务向量”。</strong>把每个专家相对基础模型的参数差看成该领域的任务向量，再优化一个合并向量，使它尽量接近各专家的有效更新，而不是简单逐参数平均。</li>
+  <li><strong>GRPO 不是机器人强化学习。</strong>它对同一问题采样一组回答，按结果奖励做组内标准化，让较好回答得到更高优势；文中在空间、驾驶、无人机、具身混合的 100k 数据上使用它。</li>
+</ul>
+<div class="diagram"><div class="grid-3">
+  <div class="panel lavender"><h4>视觉输入</h4><div class="sub">图像、多视角、视频</div><div class="label">处理</div><div class="value">Vision encoder + projector</div><div class="label">作用</div><div class="value">把场景变成模型可读 token</div></div>
+  <div class="panel cream"><h4>统一解码器</h4><div class="sub">ACE-Brain-0 8B</div><div class="label">条件</div><div class="value">视觉 token + 自然语言指令</div><div class="label">训练</div><div class="value">左到右预测文本输出</div></div>
+  <div class="panel mint"><h4>任务输出</h4><div class="sub">随领域变化</div><div class="label">高层</div><div class="value">空间问答、驾驶决策、航迹规划</div><div class="label">具身</div><div class="value">交互理解、任务计划、动作表示</div></div>
+</div><div class="caption">“统一”主要发生在表征和 token 接口层；不同实体的底层执行器接口仍是一个重要未解问题。</div></div>
+
+<h2>结果应该怎样读？</h2>
+<ul>
+  <li><strong>覆盖面确实很广。</strong>报告在 24 个基准评估：7 个空间认知、6 个自动驾驶、5 个低空无人机和 6 个具身/第一视角基准。</li>
+  <li><strong>空间结果最能支撑“脚手架”假设。</strong>ACE-Brain-0-8B 在 SAT 为 92.0%、MindCube 为 82.1%、VSI 为 63.3%；其中 SAT 和 MindCube 明显超过文中列出的若干通用 MLLM 与具身模型。</li>
+  <li><strong>跨域能力并非每项都是第一。</strong>例如 Multi3DRef 为 59.6%，仍低于 VeBrain-7B 的 67.8%。因此更合适的说法是整体强且覆盖广，不是横扫所有单项任务。</li>
+  <li><strong>SSR 的消融比总榜更关键。</strong>在四个领域的平均分上，混训让空间/驾驶/无人机/具身均低于各自专家；顺序训练则会遗忘前面的能力。SSR+GRPO 达到空间 79.1、驾驶 72.1、无人机 54.1、具身 60.0。</li>
+</ul>
+<div class="diagram"><div class="grid-3">
+  <div class="panel rose"><h4>混合训练</h4><div class="sub">所有领域一起学</div><div class="label">空间平均</div><div class="value">68.0（较空间专家 −4.5）</div><div class="label">问题</div><div class="value">各领域都有不同程度回落</div></div>
+  <div class="panel sky"><h4>顺序训练</h4><div class="sub">一个领域接一个领域</div><div class="label">具身平均</div><div class="value">59.0（+0.9）</div><div class="label">问题</div><div class="value">空间平均降至 67.6</div></div>
+  <div class="panel mint"><h4>SSR + GRPO</h4><div class="sub">脚手架、专家、合并、强化</div><div class="label">空间平均</div><div class="value">79.1（+6.6）</div><div class="label">具身平均</div><div class="value">60.0（+1.9）</div></div>
+</div><div class="caption">分数来自文中表 8；括号相对各领域单独专家。比较重点是跨域保持能力，而非把不同基准的原始分数混为一谈。</div></div>
+
+<h2>它和相近路线有什么不同？</h2>
+<ul>
+  <li><strong>相对通用 MLLM，它显式把空间能力放在训练顺序的中心。</strong>通用视觉语言模型可以有空间能力，但 ACE-Brain-0 把它当作后续驾驶、飞行与操作的初始化结构。</li>
+  <li><strong>相对只做单一实体的 embodied brain，它追求跨实体迁移。</strong>论文的野心是让同一模型同时处理车、无人机与机器人，而不是为每种本体单独训练一套“脑”。</li>
+  <li><strong>相对联合多任务学习，它把整合推迟到权重合并阶段。</strong>这避免了训练时直接混合异构数据；代价是合并是否真的保留复杂、互补能力，仍必须靠广泛实验验证。</li>
+</ul>
+
+<h2>限制与开放问题</h2>
+<ul>
+  <li><strong>“通用大脑”不等于“通用低层控制”。</strong>论文的大多数评测是视觉问答、推理、规划或 token 生成；不同机器人关节、动力学和安全约束如何统一，远未解决。</li>
+  <li><strong>性能主要来自作者报告的离线基准。</strong>24 个基准覆盖很广，但对真实世界闭环、罕见故障、延迟和安全边界的证明仍有限。</li>
+  <li><strong>空间是强假设，也可能是不完整的共同底座。</strong>触觉、力控制、长期记忆、社会交互和因果物理，未必能仅由视觉空间表征充分承载。</li>
+  <li><strong>数据无关合并不是零成本魔法。</strong>合并仍需要选算法、迭代优化与合理的专家来源；当专家任务真正冲突时，是否能同时保真仍是经验问题。</li>
+  <li><strong>日期需要留意版本差异。</strong>arXiv 条目显示 v1 于 2026-03-03 提交；HTML 页面标注的文档日期不同，本文以 arXiv 提交日期作为索引日期。</li>
+</ul>
+<p class="note"><strong>我的判断：</strong>这篇报告最值得记住的不是“又一个具身多模态模型”，而是它把跨实体学习转成了一个模型组织问题：先建立可共享的空间先验，再允许各领域独立变强，最后用模型合并而非数据混训来和解。空间脚手架的消融证据相当有说服力；但离“一个模型直接、安全地控制任意实体”还有感知—规划与低层控制之间的巨大鸿沟。</p>
+
+<h2>原文入口</h2>
+<ul>
+  <li><strong>论文页面。</strong> <a href="https://arxiv.org/abs/2603.03198">arXiv 摘要与 PDF</a></li>
+  <li><strong>网页版全文。</strong> <a href="https://arxiv.org/html/2603.03198v1">arXiv HTML v1</a></li>
+  <li><strong>项目与代码。</strong> <a href="https://ace-brain-team.github.io/ACE-Brain-0/">Project Page</a> · <a href="https://github.com/DAXIAORobotics/ACE-Brain-0">GitHub</a></li>
+</ul>
