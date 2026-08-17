@@ -64,11 +64,15 @@
               <span>blog</span>
               <strong>1</strong>
             </a>
+            <span class="category-link" data-cat="Embodied Report">
+              <span>Embodied Report</span>
+              <strong>0</strong>
+            </span>
           </nav>
         </div>
         <div class="side-block muted">
           <h2>待补方向</h2>
-          <p>Infra · 训练与推理基础设施、VLA · 视觉-语言-动作</p>
+          <p>Infra · 训练与推理基础设施、VLA · 视觉-语言-动作、Embodied Report · 具身智能报告</p>
         </div>
       </aside>
 
@@ -265,7 +269,7 @@
         });
       });
 
-      const initial = location.hash.slice(1) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
+      const initial = decodeURIComponent(location.hash.slice(1)) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
       if (initial) showCategory(initial);
     })();
   </script>

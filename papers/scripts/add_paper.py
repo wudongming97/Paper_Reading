@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CATALOG_PATH = ROOT / "papers.json"
-DEFAULT_CATEGORIES = ["LLM", "blog", "Agent", "Infra", "VLA", "WAM", "CV"]
+DEFAULT_CATEGORIES = ["LLM", "blog", "Agent", "Infra", "VLA", "WAM", "CV", "Embodied Report"]
 
 CATEGORY_DESC = {
     "LLM": "大语言模型",
@@ -23,6 +23,7 @@ CATEGORY_DESC = {
     "VLA": "视觉-语言-动作",
     "WAM": "世界模型 / 动作模型",
     "CV": "计算机视觉",
+    "Embodied Report": "具身智能报告",
 }
 
 
@@ -290,7 +291,7 @@ def write_index(catalog: dict) -> None:
         }});
       }});
 
-      const initial = location.hash.slice(1) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
+      const initial = decodeURIComponent(location.hash.slice(1)) || links.find((link) => link.classList.contains('active'))?.getAttribute('href')?.slice(1);
       if (initial) showCategory(initial);
     }})();
   </script>
