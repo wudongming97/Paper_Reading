@@ -202,6 +202,27 @@
       "arxiv": "https://arxiv.org/abs/2603.03198",
       "pdf": "https://arxiv.org/pdf/2603.03198",
       "tldr": "ACE-Brain-0 将空间智能作为跨自动驾驶、无人机与机器人操作的共同底座：先训练空间专家，后分别训练领域专家，再用无数据模型合并统一知识，并以具身数据和 GRPO 继续对齐。"
+    },
+    {
+      "category": "Embodied Report",
+      "slug": "ace-brain-0-5-2607-04426",
+      "title": "ACE-Brain-0.5: A Unified Embodied Foundational Model for Physical Agentic AI",
+      "subtitle": "ACE-Brain Team, 2026",
+      "date": "2026-07-05",
+      "tags": [
+        "embodied-ai",
+        "physical-agentic-ai",
+        "spatial-intelligence",
+        "model-merging",
+        "navigation",
+        "manipulation",
+        "progress-monitoring"
+      ],
+      "source": "https://ace-brain-team.github.io/ACE-Brain-0.5/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2607.04426",
+      "pdf": "https://arxiv.org/pdf/2607.04426",
+      "tldr": "ACE-Brain-0.5 用共享空间表征连接感知、规划、导航/操作和进度监控，并用 SSR+ 的专家合并与接口再校准形成统一具身模型；自我改进目前主要通过 oracle 纠错与外部经验状态实现。"
     }
   ]
 }

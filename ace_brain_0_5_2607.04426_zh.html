@@ -1,0 +1,99 @@
+<h1>ACE-Brain-0.5：把“看、想、动、检查”接进同一个具身大脑</h1>
+<p class="meta">ACE-Brain Team · arXiv:2607.04426 v1 · 2026-07-05</p>
+<p class="tldr"><strong>一句话结论：</strong>ACE-Brain-0.5 的目标不是只做一个会输出动作的 VLA，而是把空间感知、任务规划、导航/操作、执行进度检查放进同一个 8B 具身模型。它用 SSR+ 训练：先继承 ACE-Brain-0 的空间底座，再分别训练任务专家、合并权重，最后用少量混合数据重新校准不同输出接口；“自我改进”则暂时主要靠外部记忆与 oracle 纠错的数据飞轮，而不是让机器人现场自主改写模型权重。</p>
+
+<h2>先补背景</h2>
+<ul>
+  <li><strong>具身智能需要一个闭环。</strong>机器人应当看懂环境、决定下一步、执行动作，再判断自己是否真的更接近目标；只会从图像直接输出动作还不够。</li>
+  <li><strong>VLA 擅长“动”，但往往不擅长解释与检查。</strong>视觉—语言—动作模型把画面和指令映射成控制量，适合低层执行，却常缺少显式空间推理、长程分解和进度评估。</li>
+  <li><strong>机器人 agent 擅长编排，却不一定共享表征。</strong>它可以把规划器、工具和专家串起来，但各模块各学各的，难以成为一个统一的机器人表征。</li>
+  <li><strong>空间理解是作者选择的共同底座。</strong>找物体、判断可抓取区域、导航避障、估计任务完成度，都依赖“物体在哪里、相互如何变化”的空间状态。</li>
+</ul>
+
+<h2>问题：能力拼在一起，为什么容易失效？</h2>
+<ul>
+  <li><strong>任务不只不同，输出语言也不同。</strong>grounding 要输出框、掩码或坐标；导航要输出离散动作；操作要输出连续动作块；监控要输出进度数值。</li>
+  <li><strong>直接混训会产生接口干扰。</strong>模型可能仍然“知道”答案，却在该给坐标时输出解释文字，或在该给动作时沿用另一个任务的格式。</li>
+  <li><strong>完全分开训练又无法形成统一大脑。</strong>每个专家在本任务上很强，但部署时仍要靠外部系统协调，不能自然共享空间与任务状态。</li>
+  <li><strong>前作 ACE-Brain-0 仍偏理解。</strong>它已把空间智能作为跨自动驾驶、无人机与机器人操作的共同脚手架，但没有统一的动作接口与自我监控能力。</li>
+</ul>
+<div class="diagram"><div class="grid-2">
+  <div class="panel rose"><h4>两种旧路线</h4><div class="sub">各有缺口</div><div class="label">端到端策略</div><div class="value">动作强，但规划与评估偏弱</div><div class="label">多模块 agent</div><div class="value">能编排，却没有共享大脑</div></div>
+  <div class="panel mint"><h4>ACE-Brain-0.5</h4><div class="sub">一个共享状态，多个任务接口</div><div class="label">模型内部</div><div class="value">感知 · 规划 · 行动 · 评估</div><div class="label">模型外部</div><div class="value">记忆、经验与失败恢复</div></div>
+</div><div class="caption">论文的主张不是取消所有外部系统，而是把闭环中的核心认知能力尽量收拢到一个共享表征中。</div></div>
+
+<h2>核心想法：一个共享状态，四类直接输出</h2>
+<ul>
+  <li><strong>LLM Decoder 形成共享具身状态。</strong>图像、多视角画面或视频先经视觉编码器，和语言指令、可选本体状态一起输入 LLM，得到当前场景与任务的高层上下文。</li>
+  <li><strong>空间感知负责“东西在哪、能做什么”。</strong>模型自回归输出目标框、掩码、空间点位及 affordance（物体可被抓、推或放置的区域）。</li>
+  <li><strong>决策负责“接下来分几步做”。</strong>高层任务被生成成自然语言子目标，例如先找到杯子、再移动到台面、最后抓取。</li>
+  <li><strong>具身交互负责“实际怎么动”。</strong>导航输出离散动作；操作交给专门的 flow-matching Action Expert 生成连续动作块。</li>
+  <li><strong>自我监控负责“是不是在进步”。</strong>模型对轨迹输出 0 到 1 的进度序列，也可比较两条轨迹哪条更接近同一任务目标。</li>
+</ul>
+<div class="diagram"><div class="flow">
+  <div class="panel lavender"><h4>观察与指令</h4><div class="sub">图像 / 视频 / 多视角 + 语言</div><div class="label">输入</div><div class="value">场景、目标、可选关节状态</div></div>
+  <div class="arrow"><span class="glyph">→</span><span>共享表征</span></div>
+  <div class="panel sky"><h4>8B 具身主干</h4><div class="sub">视觉编码器 + LLM Decoder</div><div class="label">形成</div><div class="value">统一的场景—任务状态</div></div>
+  <div class="arrow"><span class="glyph">→</span><span>按任务解码</span></div>
+  <div class="panel peach"><h4>闭环输出</h4><div class="sub">感知、规划、行动、评估</div><div class="label">例子</div><div class="value">框 / 子目标 / 动作 / 进度</div></div>
+</div><div class="caption">图 2 的核心结构：不是把四个模型串联，而是用一个状态作为四种输出的共同上下文。</div></div>
+
+<h2>如何既合并知识，又不混淆接口？SSR+</h2>
+<ul>
+  <li><strong>Scaffold：从空间脚手架起步。</strong>以 ACE-Brain-0 checkpoint 为初始化，继承跨场景、跨视角与具身空间理解，而非从零开始训练每项能力。</li>
+  <li><strong>Specialize：四类任务各自学好。</strong>分别训练空间问答/规划、2D/3D grounding、具身导航和进度估计四个 checkpoint，避免训练期间彼此破坏输出习惯。</li>
+  <li><strong>Reconcile：合并任务向量，而非混合原始数据。</strong>每个专家相对基础模型的权重变化被视作任务向量；作者以数据无关的优化式合并这些变化，试图保留各专家的深层表征。</li>
+  <li><strong>Reactivate：重新对齐“说话方式”。</strong>合并后的模型不直接使用，而用一小份覆盖所有接口的混合 SFT 数据微调。作者认为合并通常保住了语义能力，主要丢失的是输出格式约定。</li>
+</ul>
+<div class="diagram"><div class="flow">
+  <div class="panel lavender"><h4>Scaffold</h4><div class="sub">ACE-Brain-0</div><div class="label">共享先验</div><div class="value">空间理解与具身场景常识</div></div>
+  <div class="arrow"><span class="glyph">→</span><span>各自训练</span></div>
+  <div class="panel cream"><h4>Specialize</h4><div class="sub">四种专家</div><div class="label">接口</div><div class="value">QA / 坐标 / 导航 / 进度</div></div>
+  <div class="arrow"><span class="glyph">→</span><span>合并 + 校准</span></div>
+  <div class="panel mint"><h4>SSR+</h4><div class="sub">Reconcile + Reactivate</div><div class="label">结果</div><div class="value">统一参数，接口可正确切换</div></div>
+</div><div class="caption">Reactivate 是相对 ACE-Brain-0 的关键增量：把“模型还会，但暂时不会按正确格式回答”变成显式可修复的问题。</div></div>
+
+<h2>动作为什么还有一条“快通路”？</h2>
+<ul>
+  <li><strong>大主干适合慢速语义，不适合每拍控制。</strong>完整 LLM 反复前向会增加控制延迟；机械臂接触、滑动或目标偏移时，动作回路需要立刻看到最新画面。</li>
+  <li><strong>DINOv3 提供最新视觉特征。</strong>轻量 Fast Vision Pathway 编码最近多视角观测，并直接注入 Action Expert，不必每次都穿过重型 LLM Decoder。</li>
+  <li><strong>Action Expert 生成连续动作块。</strong>它采用 flow matching：从噪声初始化的动作逐步“流向”可执行控制序列，并同时条件化于慢速主干上下文和快速视觉特征。</li>
+  <li><strong>训练时主干被冻结。</strong>操作学习只更新快速视觉分支和动作专家，减少对空间推理、语言 grounding 等已有能力的扰动。</li>
+</ul>
+<div class="diagram"><div class="grid-3">
+  <div class="panel sky"><h4>慢：LLM 主干</h4><div class="sub">低频更新</div><div class="label">提供</div><div class="value">任务语义、子目标、共享场景状态</div></div>
+  <div class="panel lavender"><h4>快：DINOv3</h4><div class="sub">控制频率更新</div><div class="label">提供</div><div class="value">最新多视角感知与物体变化</div></div>
+  <div class="panel peach"><h4>Action Expert</h4><div class="sub">flow-matching 控制头</div><div class="label">输出</div><div class="value">连续机器人动作块</div></div>
+</div><div class="caption">这是“慢思考 + 快反应”的分工，而不是让语言模型直接接管每一条电机指令。</div></div>
+
+<h2>结果，应该怎么看？</h2>
+<ul>
+  <li><strong>空间与 grounding 是主要增益区。</strong>作者报告相对 ACE-Brain-0，在 18 个空间感知和定位基准中有 14 个提升，符合其先强化空间底座再扩展能力的设计。</li>
+  <li><strong>统一导航模型已经有竞争力。</strong>在 RxR Val-Unseen，ACE-Brain-0.5 的成功率为 63.8%、目标误差为 4.3；导航专用版本在 R2R 可达 62.2% 成功率。</li>
+  <li><strong>操作结果依赖专门动作分支。</strong>在 LIBERO 上，采用冻结主干和训练动作专家的版本平均成功率为 98.2%；VLA 变体在 Simpler-Env Bridge 为 82.3%。这些不等于同一主干对任意真实机器人零样本控制。</li>
+  <li><strong>进度估计是很实在的闭环补全。</strong>在严格的 RBM-EVAL-Refined，ID/OOD VOC 相关系数为 0.80 / 0.88，高于文中 Robometer-4B 的 0.78 / 0.81。</li>
+</ul>
+
+<h2>“自我改进”到底改了什么？</h2>
+<ul>
+  <li><strong>先由模型自己走出错误状态。</strong>从静态示范训练出的导航策略在闭环中执行，因而会遇到训练集未覆盖的岔路、相似走廊和错误累计。</li>
+  <li><strong>oracle 负责发现偏离并接管恢复。</strong>当动作让距离变远、路径不一致、过早停下或局部误差累积时，oracle teacher 完成后续正确轨迹。</li>
+  <li><strong>失败被转成纠正示范。</strong>这些由模型自己诱发、再由 oracle 修复的状态加入训练数据；R2R 成功率由静态模仿的 48.6% 升至 57.4%，RxR 从 53.3% 升至 63.8%。</li>
+  <li><strong>在线更新的首先是外部执行状态。</strong>任务 schema、空间记忆、失败恢复案例和可复用技能可随 rollout 增量更新；模型权重更新仍需要积累并验证足够数据。</li>
+</ul>
+
+<h2>限制与开放问题</h2>
+<ul>
+  <li><strong>“统一”不等于一个网络完成全部实时控制。</strong>连续操作依赖额外的 fast vision 和 Action Expert；不同机器人本体的动作空间仍需专门适配。</li>
+  <li><strong>“自我改进”仍依赖 oracle。</strong>论文没有解决真实世界中谁可靠地判错、接管和标注的问题；这正是昂贵实体机器人部署的难点。</li>
+  <li><strong>多数结论来自不同任务设置的组合。</strong>空间、导航、操作和进度评估各有不同 benchmark 与训练变体，不能把它们读成一项端到端真实世界总分。</li>
+  <li><strong>安全恢复尚未充分验证。</strong>进度分数可以触发重规划，但碰撞、抓取失败或感知幻觉下的安全边界仍需要硬件闭环实验和约束控制配合。</li>
+</ul>
+<p class="note"><strong>我的判断：</strong>ACE-Brain-0.5 最有价值的部分是 SSR+ 的问题定义：多任务合并后，模型可能不是“忘了能力”，而是“接口失配”，因此用轻量 Reactivate 重建输出约定。它也清楚地把行动和自评放入同一共享状态。更保守地看，论文的自我改进仍是一套有 oracle 的数据飞轮，而非自主进化；真正的通用物理 agent 还要跨过低层控制、在线安全与现实数据成本这三道坎。</p>
+
+<h2>原文入口</h2>
+<ul>
+  <li><strong>论文页面。</strong> <a href="https://arxiv.org/abs/2607.04426">arXiv 摘要与 PDF</a></li>
+  <li><strong>网页版全文。</strong> <a href="https://arxiv.org/html/2607.04426v1">arXiv HTML v1</a></li>
+  <li><strong>项目与代码。</strong> <a href="https://ace-brain-team.github.io/ACE-Brain-0.5/">Project Page</a> · <a href="https://github.com/ACE-BRAIN-Team/ACE-Brain-0.5">GitHub</a></li>
+</ul>
