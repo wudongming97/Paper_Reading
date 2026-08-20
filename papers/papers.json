@@ -223,6 +223,25 @@
       "arxiv": "https://arxiv.org/abs/2607.04426",
       "pdf": "https://arxiv.org/pdf/2607.04426",
       "tldr": "ACE-Brain-0.5 用共享空间表征连接感知、规划、导航/操作和进度监控，并用 SSR+ 的专家合并与接口再校准形成统一具身模型；自我改进目前主要通过 oracle 纠错与外部经验状态实现。"
+    },
+    {
+      "category": "WAM",
+      "slug": "fact-wam-2608-10232",
+      "title": "FACT: Failure-Aware Causal Training for World-Action Models",
+      "subtitle": "Peng et al., UC San Diego, 2026",
+      "date": "2026-08-10",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "failure-data",
+        "causal-training",
+        "video-prediction"
+      ],
+      "source": "https://fact-wam.github.io",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2608.10232",
+      "pdf": "https://arxiv.org/pdf/2608.10232",
+      "tldr": "FACT 先生成动作，再预测该动作导致的未来视频和任务进度；失败轨迹只监督后果、不监督动作，让 WAM 学会坏动作真正会导致什么。"
     }
   ]
 }
