@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Outrageously Large Neural Networks — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark" aria-hidden="true">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://arxiv.org/abs/1701.06538" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/1701.06538" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>Outrageously Large Neural Networks — MoE 怎样让模型“很大但不每次全算”</h1>
+<p>这篇 2017 年 Google Brain 论文是现代稀疏 MoE（Mixture-of-Experts，专家混合）路线的关键起点。它的核心想法很简单：不要让每个输入都经过整张巨大网络，而是准备很多“专家”小网络，再让一个门控网络为每个 token 或样本只挑少数几个专家。这样模型参数量可以扩大到 137B 级别，但每次前向计算只激活很小一部分。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>模型容量受参数量限制。</strong> 参数越多，模型理论上能记住和表达的信息越多；但 dense 模型每次都会用到所有参数，所以参数变多通常也意味着计算变贵。</li>
+  <li><strong>条件计算想打破这个绑定。</strong> 条件计算指“不同输入走不同计算路径”。理想状态是总参数很多，但每个输入只用其中一小块。</li>
+  <li><strong>Mixture-of-Experts 是一种条件计算。</strong> MoE 准备很多专家网络，每个专家通常是前馈网络；门控网络根据输入选择少量专家，并把它们的输出加权合并。</li>
+  <li><strong>难点不只是数学，还有系统。</strong> 如果门控总选同几个专家，模型会失衡；如果专家分布在不同 GPU 上，通信也会拖慢训练。本文同时处理算法和集群效率问题。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>大模型容量很有用，但计算成本爆炸。</strong> 语言建模和翻译需要吸收海量文本知识，容量越大越有潜力；可 dense 网络把所有参数都算一遍，扩容很快不可承受。</li>
+  <li><strong>早期条件计算很难训练好。</strong> 硬选择专家不可微，软选择又会激活太多专家，失去节省计算的意义。训练时还容易出现所有输入挤向少数专家。</li>
+  <li><strong>GPU 集群不喜欢不规则计算。</strong> 稀疏路由会让每个专家收到不同数量的样本，负载不均衡会让一部分 GPU 空等，吞吐下降。</li>
+  <li><strong>论文想证明 MoE 可以真的规模化。</strong> 目标不是只提出一个层，而是在语言建模和机器翻译上，把专家数量扩到上千甚至更多，还保持可训练和高效。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>每个输入只激活 top-k 个专家。</strong> 门控网络给专家打分，再只保留最高的少数几个专家。论文常用 top-2：每个 token 只走两个专家，而不是所有专家。</li>
+  <li><strong>专家可以很多，但每次计算很少。</strong> 总参数量来自成百上千个专家；单次计算量来自被选中的几个专家。这就是“容量”和“计算”解耦的关键。</li>
+  <li><strong>门控要加噪声和负载均衡损失。</strong> 噪声让早期路由更容易探索；负载均衡损失惩罚专家使用不均，避免热门专家过载、冷门专家闲置。</li>
+  <li><strong>MoE 层插在已有网络中间。</strong> 论文把 MoE 放在 stacked LSTM 之间，并以卷积方式应用到序列位置上。它不是替换整个模型，而是作为一个超大容量层。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>输入 token</h4>
+      <div class="sub">来自语言模型或翻译模型</div>
+      <div class="label">包含</div>
+      <div class="value">当前词位置的隐藏状态</div>
+      <div class="label">问题</div>
+      <div class="value">不想让它经过全部专家</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>门控</span></div>
+    <div class="panel mint">
+      <h4>稀疏门控</h4>
+      <div class="sub">Noisy Top-k Gating</div>
+      <div class="label">选择</div>
+      <div class="value">只保留得分最高的 1–2 个专家</div>
+      <div class="label">训练</div>
+      <div class="value">加噪声和负载均衡项</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>路由</span></div>
+    <div class="panel peach">
+      <h4>专家网络</h4>
+      <div class="sub">大量前馈子网络</div>
+      <div class="label">总容量</div>
+      <div class="value">最多到 137B 参数</div>
+      <div class="label">实际计算</div>
+      <div class="value">每个 token 只用少数专家</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>门控网络先给专家打分。</strong> 对输入 \(x\)，门控网络产生每个专家的分数，再通过 top-k 操作把大多数专家权重置零。剩下专家的输出按门控权重加权求和。</li>
+  <li><strong>Noisy gating 帮助专家被探索。</strong> 训练时给门控 logits 加可学习噪声，让模型不要太早固定到少数专家。这样更多专家有机会收到梯度。</li>
+  <li><strong>负载均衡损失让专家分工更平均。</strong> 论文加入 importance loss 和 load loss，分别约束专家收到的总门控权重和样本数量。直觉是：别让一个专家变成所有输入的默认路线。</li>
+  <li><strong>专家并行依赖 all-to-all 通信。</strong> 每个设备持有一部分专家，输入先按专家路由到对应设备，专家算完再把结果送回原位置。这是 MoE 工程复杂度的核心。</li>
+  <li><strong>MoE 层放在 LSTM 层之间。</strong> 论文在语言建模和机器翻译中，把 MoE 作为超大前馈层插入序列模型，让模型容量主要来自专家层。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel lavender">
+      <h4>组件 1：Gate</h4>
+      <div class="sub">决定用哪些专家</div>
+      <div class="value">给每个专家打分，只留下 top-k，输出稀疏权重。</div>
+    </div>
+    <div class="panel mint">
+      <h4>组件 2：Experts</h4>
+      <div class="sub">大量前馈网络</div>
+      <div class="value">每个专家处理被路由过来的 token，专家之间参数不同。</div>
+    </div>
+    <div class="panel sky">
+      <h4>组件 3：Balance</h4>
+      <div class="sub">避免专家拥堵</div>
+      <div class="value">辅助损失让样本更均匀地分散到专家上。</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它让条件计算第一次很有工程说服力。</strong> 条件计算在理论上早就有吸引力，但本文展示了在现代 GPU 集群上可训练、可扩展、有效果的方案。</li>
+  <li><strong>它把“参数量”和“每 token 计算量”拆开。</strong> Dense 模型参数翻倍通常计算也翻倍；MoE 可以让参数量上千倍增长，而单次计算只小幅增加。</li>
+  <li><strong>它指出负载均衡是 MoE 的核心问题。</strong> MoE 不是简单堆专家；如果没有平衡项和噪声，门控会塌缩，系统吞吐也会被少数专家拖垮。</li>
+  <li><strong>它预示了后来的稀疏 LLM 路线。</strong> Switch Transformer、GShard、Mixtral 等后续模型都沿着“稀疏激活专家”这条路继续发展。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel rose">
+      <h4>Dense 扩容</h4>
+      <div class="sub">所有参数每次都参与计算</div>
+      <div class="value">容量变大时，训练和推理成本几乎同步增加；模型越大越难部署。</div>
+    </div>
+    <div class="panel cream">
+      <h4>Sparse MoE 扩容</h4>
+      <div class="sub">只激活少数专家</div>
+      <div class="value">总参数量很大，但每个 token 只走 top-k 专家；容量和计算不再强绑定。</div>
+    </div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>参数量扩到 137B 级别。</strong> 论文展示了包含最多 137B 参数的 MoE 层，在当时属于非常激进的模型容量扩展。</li>
+  <li><strong>语言模型 perplexity 明显下降。</strong> 在 1 Billion Word Benchmark 上，MoE 模型达到 28.0 perplexity，优于当时公开结果，并且计算成本更低。</li>
+  <li><strong>机器翻译 BLEU 提升。</strong> 论文报告 WMT’14 英法和英德翻译分别达到 40.56 和 26.03 BLEU，超过当时强基线。</li>
+  <li><strong>效率损失相对可控。</strong> 作者强调实现了超过 1000× 的模型容量提升，同时在现代 GPU 集群上只付出较小计算效率损失。</li>
+  <li><strong>专家数量继续增加仍有收益。</strong> 实验显示增加专家数量可以继续改善结果，说明模型真的在利用额外容量，而不只是挂了很多闲置参数。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>系统复杂度显著增加。</strong> MoE 需要路由、跨设备通信、专家容量限制和负载均衡，比 dense 层难实现和调试得多。</li>
+  <li><strong>专家是否真“专业”并不自动保证。</strong> 名字叫 experts，但专家学到什么分工取决于数据、门控和训练动态，不一定符合人类理解的主题或任务边界。</li>
+  <li><strong>小 batch 或低并行度不一定划算。</strong> MoE 的效率依赖把足够多 token 分发到专家上；规模不够时，通信和调度开销可能吃掉收益。</li>
+  <li><strong>本文还是 LSTM 时代的架构。</strong> 它的核心思想延续到 Transformer MoE，但具体插入位置、路由粒度、训练技巧在后续工作中变化很大。</li>
+  <li><strong>负载均衡和质量之间有张力。</strong> 强行平均使用专家可能牺牲门控自由度；放得太松又会塌缩或拥堵。这仍是后续 MoE 研究的常见主题。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>它是现代 MoE 大模型的重要源头。</strong> 后来的 GShard、Switch Transformer、Pathways、Mixtral 等都可以看到这篇论文的影子：稀疏路由、专家并行、负载均衡。</li>
+  <li><strong>它改变了“模型大小”的含义。</strong> 从这条路线开始，讨论模型规模时必须区分总参数量和激活参数量。一个模型可以总参数巨大，但每次推理只用其中一部分。</li>
+</ul>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    </article>
+  </main>
+</body>
+</html>

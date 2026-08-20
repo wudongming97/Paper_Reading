@@ -1,0 +1,247 @@
+{
+  "categories": [
+    "LLM",
+    "Agent",
+    "Infra",
+    "VLA",
+    "WAM",
+    "CV",
+    "blog",
+    "Embodied Report"
+  ],
+  "papers": [
+    {
+      "category": "LLM",
+      "slug": "scaling-laws-2001-08361",
+      "title": "Scaling Laws for Neural Language Models",
+      "subtitle": "Kaplan et al., OpenAI, 2020",
+      "date": "2020-01-23",
+      "tags": [
+        "nlp",
+        "scaling",
+        "large-language-models"
+      ],
+      "arxiv": "https://arxiv.org/abs/2001.08361",
+      "pdf": "https://arxiv.org/pdf/2001.08361",
+      "tldr": "语言模型损失随参数量、数据量、算力呈幂律下降；固定算力下应优先放大模型并早停。"
+    },
+    {
+      "category": "LLM",
+      "slug": "compute-optimal-2203-15556",
+      "title": "Training Compute-Optimal Large Language Models",
+      "subtitle": "Hoffmann et al., DeepMind, 2022",
+      "date": "2022-03-29",
+      "tags": [
+        "nlp",
+        "scaling",
+        "chinchilla",
+        "large-language-models"
+      ],
+      "arxiv": "https://arxiv.org/abs/2203.15556",
+      "pdf": "https://arxiv.org/pdf/2203.15556",
+      "tldr": "Chinchilla 重新估计算力最优缩放：模型参数和训练 token 应近似等比例增长。"
+    },
+    {
+      "category": "LLM",
+      "slug": "sparsely-gated-moe-1701-06538",
+      "title": "Outrageously Large Neural Networks",
+      "subtitle": "Shazeer et al., Google Brain, 2017",
+      "date": "2017-01-23",
+      "tags": [
+        "moe",
+        "conditional-computation",
+        "sparse-models",
+        "scaling"
+      ],
+      "arxiv": "https://arxiv.org/abs/1701.06538",
+      "pdf": "https://arxiv.org/pdf/1701.06538",
+      "tldr": "稀疏门控 MoE 让模型拥有巨大总参数量，但每个输入只激活少数专家。"
+    },
+    {
+      "category": "CV",
+      "slug": "locateanything-2605-27365",
+      "title": "LocateAnything: Fast and High-Quality Vision-Language Grounding with Parallel Box Decoding",
+      "subtitle": "Wang et al., NVIDIA, 2026",
+      "date": "2026-05-27",
+      "tags": [
+        "vision-language",
+        "grounding",
+        "detection",
+        "parallel-decoding"
+      ],
+      "arxiv": "https://arxiv.org/abs/2605.27365",
+      "pdf": "https://arxiv.org/pdf/2605.27365",
+      "tldr": "LocateAnything 用 Parallel Box Decoding 把框作为几何单元并行生成，在视觉 grounding 中同时提升速度和高 IoU 定位质量。"
+    },
+    {
+      "category": "LLM",
+      "slug": "mixture-of-transformers-2411-04996",
+      "title": "Mixture-of-Transformers: A Sparse and Scalable Architecture for Multi-Modal Foundation Models",
+      "subtitle": "Liang et al., Stanford / Meta, 2025",
+      "date": "2025-04-01",
+      "tags": [
+        "multimodal",
+        "transformer",
+        "sparse-models",
+        "moe",
+        "scaling"
+      ],
+      "arxiv": "https://arxiv.org/abs/2411.04996",
+      "pdf": "https://arxiv.org/pdf/2411.04996",
+      "tldr": "MoT 按模态拆分 Transformer 的非 embedding 参数，同时保留全局 self-attention，让多模态预训练用更少 FLOPs 达到 dense baseline 质量。"
+    },
+    {
+      "category": "blog",
+      "slug": "video-gen-is-an-infra-problem",
+      "title": "Why Video Gen Is an Infra Problem",
+      "subtitle": "Chen et al., NVIDIA, 2026",
+      "date": "2026-05-26",
+      "tags": [
+        "video-generation",
+        "infra",
+        "latency",
+        "long-video",
+        "serving"
+      ],
+      "source": "https://research.nvidia.com/labs/eai/blogs/video-gen-is-an-infra-problem/",
+      "source_label": "Source",
+      "arxiv": "",
+      "pdf": "",
+      "tldr": "视频生成正在从漂亮 demo 转向端到端基础设施问题：长时记忆、VAE 解码、KV cache、低精度、并行和调度共同决定可用性。"
+    },
+    {
+      "category": "Agent",
+      "slug": "data-journalist-agent-2606-11176",
+      "title": "Data Journalist Agent: Transforming Data into Verifiable Multimodal Stories",
+      "subtitle": "Lin et al., Oxford / Stanford, 2026",
+      "date": "2026-06-09",
+      "tags": [
+        "agent",
+        "data-journalism",
+        "multimodal",
+        "verification",
+        "provenance"
+      ],
+      "source": "https://data2story.github.io",
+      "source_label": "Website",
+      "arxiv": "https://arxiv.org/abs/2606.11176",
+      "pdf": "https://arxiv.org/pdf/2606.11176",
+      "tldr": "Data2Story 用多智能体虚拟 newsroom 把原始数据变成可读的多媒体新闻网页，并用 Inspector 将 claim 绑定到代码、数据或外部来源。"
+    },
+    {
+      "category": "WAM",
+      "slug": "imagewam-2606-19531",
+      "title": "ImageWAM: Do World Action Models Really Need Video Generation, or Just Image Editing?",
+      "subtitle": "Zhang et al., SJTU / EIT / Tencent Robotics X, 2026",
+      "date": "2026-06-17",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "image-editing",
+        "kv-cache"
+      ],
+      "source": "https://zhangwenyao1.github.io/ImageWAM/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2606.19531",
+      "pdf": "https://arxiv.org/pdf/2606.19531",
+      "tldr": "ImageWAM 用图像编辑模型的内部 KV 缓存表达“按指令应发生的视觉变化”，无需生成未来视频或目标图，就能更快地预测机器人动作。"
+    },
+    {
+      "category": "WAM",
+      "slug": "fast-wam-2603-16666",
+      "title": "Fast-WAM: Do World Action Models Need Test-time Future Imagination?",
+      "subtitle": "Yuan et al., Tsinghua / Galaxea AI, 2026",
+      "date": "2026-03-17",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "video-modeling",
+        "real-time-control"
+      ],
+      "source": "https://yuantianyuan01.github.io/FastWAM/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2603.16666",
+      "pdf": "https://arxiv.org/pdf/2603.16666",
+      "tldr": "Fast-WAM 训练时保留视频预测监督，部署时跳过未来视频生成，说明 WAM 的主要收益可能来自世界表征学习，而不是测试时显式想象。"
+    },
+    {
+      "category": "WAM",
+      "slug": "aha-wam-2606-09811",
+      "title": "AHA-WAM: Asynchronous Horizon-Adaptive World-Action Modeling with Observation-Guided Context Routing",
+      "subtitle": "Cai et al., SJTU / Shanghai AI Lab / Baidu AI Cloud, 2026",
+      "date": "2026-06-08",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "asynchronous-control",
+        "video-modeling"
+      ],
+      "source": "https://serene-sivy.github.io/aha-wam/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2606.09811",
+      "pdf": "https://arxiv.org/pdf/2606.09811",
+      "tldr": "AHA-WAM 将低频长时世界规划与高频短时动作执行解耦，并用观测引导路由与滚动记忆保持异步上下文新鲜。"
+    },
+    {
+      "category": "Embodied Report",
+      "slug": "ace-brain-0-2603-03198",
+      "title": "ACE-Brain-0: Spatial Intelligence as a Shared Scaffold for Universal Embodiments",
+      "subtitle": "Gong et al., ACE Robotics / SJTU et al., 2026",
+      "date": "2026-03-03",
+      "tags": [
+        "embodied-ai",
+        "spatial-intelligence",
+        "multimodal",
+        "model-merging",
+        "autonomous-driving",
+        "uav",
+        "robotics"
+      ],
+      "source": "https://ace-brain-team.github.io/ACE-Brain-0/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2603.03198",
+      "pdf": "https://arxiv.org/pdf/2603.03198",
+      "tldr": "ACE-Brain-0 将空间智能作为跨自动驾驶、无人机与机器人操作的共同底座：先训练空间专家，后分别训练领域专家，再用无数据模型合并统一知识，并以具身数据和 GRPO 继续对齐。"
+    },
+    {
+      "category": "Embodied Report",
+      "slug": "ace-brain-0-5-2607-04426",
+      "title": "ACE-Brain-0.5: A Unified Embodied Foundational Model for Physical Agentic AI",
+      "subtitle": "ACE-Brain Team, 2026",
+      "date": "2026-07-05",
+      "tags": [
+        "embodied-ai",
+        "physical-agentic-ai",
+        "spatial-intelligence",
+        "model-merging",
+        "navigation",
+        "manipulation",
+        "progress-monitoring"
+      ],
+      "source": "https://ace-brain-team.github.io/ACE-Brain-0.5/",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2607.04426",
+      "pdf": "https://arxiv.org/pdf/2607.04426",
+      "tldr": "ACE-Brain-0.5 用共享空间表征连接感知、规划、导航/操作和进度监控，并用 SSR+ 的专家合并与接口再校准形成统一具身模型；自我改进目前主要通过 oracle 纠错与外部经验状态实现。"
+    },
+    {
+      "category": "WAM",
+      "slug": "fact-wam-2608-10232",
+      "title": "FACT: Failure-Aware Causal Training for World-Action Models",
+      "subtitle": "Peng et al., UC San Diego, 2026",
+      "date": "2026-08-10",
+      "tags": [
+        "robotics",
+        "world-action-model",
+        "failure-data",
+        "causal-training",
+        "video-prediction"
+      ],
+      "source": "https://fact-wam.github.io",
+      "source_label": "Project",
+      "arxiv": "https://arxiv.org/abs/2608.10232",
+      "pdf": "https://arxiv.org/pdf/2608.10232",
+      "tldr": "FACT 先生成动作，再预测该动作导致的未来视频和任务进度；失败轨迹只监督后果、不监督动作，让 WAM 学会坏动作真正会导致什么。"
+    }
+  ]
+}

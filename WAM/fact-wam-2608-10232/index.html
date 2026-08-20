@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FACT: Failure-Aware Causal Training for World-Action Models — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://fact-wam.github.io" target="_blank" rel="noopener">Project</a><a href="https://arxiv.org/abs/2608.10232" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2608.10232" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>FACT — 让世界动作模型真正看懂“坏动作会发生什么”</h1>
+<p>世界动作模型常靠预测未来画面来帮助机器人行动，但训练数据大多是成功示范。因此，即使机器人提出一个坏动作，模型也可能乐观地想象出成功未来。FACT 的解法是颠倒顺序：先生成动作，再预测这个动作导致的未来视频和任务进度。失败轨迹不用于模仿动作，只用于监督坏动作的真实后果。这样，失败不再是应丢弃的脏数据，而成为世界模型最缺少的反例。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>VLA 直接从观察生成动作。</strong> 输入是多视角图像、机器人状态和语言指令，输出是一段连续动作。</li>
+  <li><strong>WAM 同时学习行动和世界变化。</strong> World-Action Model 会预测未来画面，把运动规律和物理先验带进策略学习。</li>
+  <li><strong>视频优先路线先想象再反推动作。</strong> 这能利用强视频模型，但通常要完整生成视频，再通过 inverse dynamics 解码动作，推理较慢。</li>
+  <li><strong>未来辅助路线把预测未来当训练信号。</strong> 它更直接，但未来目标通常来自成功示范，模型很少见过坏动作的真实后果。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>成功数据制造了乐观偏差。</strong> 当训练中几乎所有动作都通向成功，模型会学成“无论做什么，事情大概都会变好”。</li>
+  <li><strong>失败动作不能直接拿来模仿。</strong> 若把 rollout 中的坏动作加入 action loss，策略会被教着重复错误。</li>
+  <li><strong>但失败后的画面完全是有效标签。</strong> 坏抓取导致物体掉落、错误放置导致任务停滞，这些都是真实的动作后果。</li>
+  <li><strong>关键是分开“该做什么”和“做了会怎样”。</strong> 前者只应学习专家动作；后者应同时学习成功和失败轨迹。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>先动作，后世界。</strong> FACT 首先生成 action chunk，然后以该动作作为干净条件，预测未来视频和任务进度 value。</li>
+  <li><strong>成功示范监督全部分支。</strong> 好轨迹同时训练动作、未来视频和任务进度。</li>
+  <li><strong>失败轨迹只监督后果。</strong> 训练时屏蔽失败样本的 action imitation loss，但保留 future-video loss 和较低的 progress target。</li>
+  <li><strong>因果顺序让失败数据变得安全。</strong> 模型不会学习“去做坏动作”，却会学习“如果做了坏动作，未来会变坏”。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel mint">
+      <h4>成功示范</h4>
+      <div class="sub">expert action → successful future</div>
+      <div class="label">训练动作</div><div class="value">是，模仿专家 action chunk</div>
+      <div class="label">训练世界</div><div class="value">是，预测成功未来与较高进度</div>
+    </div>
+    <div class="panel rose">
+      <h4>失败 rollout</h4>
+      <div class="sub">bad action → observed failure</div>
+      <div class="label">训练动作</div><div class="value">否，action loss 被 mask</div>
+      <div class="label">训练世界</div><div class="value">是，预测失败未来与较低进度</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>一个共享 diffusion transformer 预测三种目标。</strong> 模型基于 WAN2.2-5B，同时去噪动作、value token 和未来视频 latent。</li>
+  <li><strong>训练序列包含五个区段。</strong> P 是观察前缀，A 是待预测的噪声动作，G 是干净真值动作，V 是进度，I 是未来视频。</li>
+  <li><strong>A 和 G 是同一段动作的两种角色。</strong> A 是模型正在学习还原的带噪动作；G 是数据里机器人实际执行过的干净动作，只给世界分支当条件。</li>
+  <li><strong>attention mask 隔离动作模仿与世界预测。</strong> A 看不到 G，因此动作分支不能抄答案；V 和 I 可以看 G，因此能学习“这段真实动作造成了什么”。</li>
+  <li><strong>失败发生后降低进度标签。</strong> 进度原本随 episode 推进，若动作进入失败状态，目标会扣除失败惩罚并裁剪到 0 到 1。</li>
+  <li><strong>动作 adapter 给机器人 token 专属容量。</strong> 它插在共享视频 backbone 的 FFN 后，让动作学习受益于世界预测，同时保留视频模型能力。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>观察与指令</h4>
+      <div class="sub">P: images + state + language</div>
+      <div class="label">输入</div><div class="value">主视角、腕部相机、机器人状态</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>Stage 1</span></div>
+    <div class="panel mint">
+      <h4>生成动作</h4>
+      <div class="sub">A → clean action</div>
+      <div class="label">输出</div><div class="value">长度 H=48 的 action chunk</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>Stage 2</span></div>
+    <div class="panel peach">
+      <h4>预测后果</h4>
+      <div class="sub">action → value + future</div>
+      <div class="label">用途</div><div class="value">评分动作，或可视化未来视频</div>
+    </div>
+  </div>
+</div>
+
+<h2>Teacher forcing 到底在哪里</h2>
+<ul>
+  <li><strong>它发生在世界分支，不是动作分支。</strong> 训练未来视频 V 和任务进度 I 时，FACT 输入真实执行动作 G，而不是动作分支此刻预测出的 A。</li>
+  <li><strong>真实动作让条件与结果严格配对。</strong> 数据中的未来画面确实由 G 造成；如果改用仍带噪或预测错误的 A，就会要求模型用一个动作解释另一个动作的后果。</li>
+  <li><strong>动作分支仍必须独立完成预测。</strong> 因果 attention mask 禁止 A 读取 G，所以 teacher forcing 不会让 policy 在训练时偷看标准答案。</li>
+  <li><strong>训练和部署使用的动作来源不同。</strong> 训练时世界分支看数据真值 G；部署时没有 G，先由 Stage 1 生成完整动作，再把它放进同一个干净动作槽供 Stage 2 使用。</li>
+  <li><strong>这里不是语言模型常见的逐 token teacher forcing。</strong> 两者原则相同，都是用真值稳定条件；FACT 强制的是整段 action chunk 与其真实后果的对应关系。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel sky">
+      <h4>训练：老师给真实动作</h4>
+      <div class="sub">observation + ground-truth G</div>
+      <div class="label">动作分支</div><div class="value">A 独立去噪，不能看到 G</div>
+      <div class="label">世界分支</div><div class="value">G → 真实未来视频与进度</div>
+    </div>
+    <div class="panel peach">
+      <h4>推理：模型先给出动作</h4>
+      <div class="sub">observation + predicted action</div>
+      <div class="label">Stage 1</div><div class="value">生成完整动作 â</div>
+      <div class="label">Stage 2</div><div class="value">把 â 当作干净条件预测后果</div>
+    </div>
+  </div>
+</div>
+
+<h2>Failure 数据怎样得到</h2>
+<ul>
+  <li><strong>失败数据在正式评测前收集。</strong> 作者先只用成功示范训练初始策略，再让它在训练环境 rollout；没有完成任务的 episode 才进入失败集合 Df。</li>
+  <li><strong>评测失败不会回流训练。</strong> 模型与失败集合准备完毕后才冻结并统计测试成功率，否则就会发生测试泄漏。</li>
+  <li><strong>每条失败轨迹保留完整因果链。</strong> 数据包含观察、语言指令、实际执行动作和动作后的真实画面；能判断时还标注 failure onset，也就是从哪一刻开始进入不可恢复的失败。</li>
+  <li><strong>训练同时抽取成功和失败窗口。</strong> 成功窗口使用 La、Lv、LI 三个损失；失败窗口把动作 mask 设为 0，只保留 Lv 和 LI。</li>
+  <li><strong>失败进度不是简单全部写成零。</strong> 正常进度先按 t/T 线性增长；若 action chunk 在预测范围内触发失败，再减去失败惩罚 λfail=1，并裁剪到 0 到 1。</li>
+</ul>
+
+<h2>三个训练目标如何分工</h2>
+<ul>
+  <li><strong>La 回答“应该做什么”。</strong> 它让动作 A 靠近专家真实动作，因此只允许成功示范监督。</li>
+  <li><strong>LI 回答“做了会看到什么”。</strong> 它预测当前帧及四个未来时间点，时间位置为 0、H/4、H/2、3H/4、H。</li>
+  <li><strong>Lv 回答“任务推进了多少”。</strong> 它不是只看状态的 value，而是同时看状态、指令和候选动作，所以同一个场景中的不同动作可以得到不同分数。</li>
+  <li><strong>三个目标使用同一种 flow-matching 去噪训练。</strong> 动作损失权重 wa=20，value 与视频权重均为 1；动作 chunk 长度 H=48，默认推理使用 20 个 Euler 去噪步骤。</li>
+  <li><strong>共享 backbone 让后果学习反哺动作生成。</strong> 即便失败样本没有 La，它对未来和进度造成的梯度仍会更新共享表示，从而帮助 policy 分辨危险动作。</li>
+</ul>
+
+<h2>推理时怎么用</h2>
+<ul>
+  <li><strong>低延迟时只跑动作阶段。</strong> Stage 1 生成一个动作后可以立即执行，不必等待未来视频。</li>
+  <li><strong>需要可靠性时采样多个候选。</strong> 模型并行生成 N 个 action chunk，再分别预测每个动作的任务进度。</li>
+  <li><strong>选择预测进度最高的动作。</strong> 这相当于一个轻量 best-of-N，但不需要单独训练 critic。</li>
+  <li><strong>论文默认用 N=4 做可选评分。</strong> 候选更多通常更可靠，但收益逐渐减小，延迟则继续增加。</li>
+</ul>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>相比成功数据 WAM，FACT 能想象失败。</strong> 同一个坏动作下，普通模型仍可能幻觉出成功抓取；FACT 会预测实际失败画面。</li>
+  <li><strong>相比直接混入失败数据，它不会污染 policy。</strong> failed-action loss 的消融只有 63% 真实 seen 成功率，证明坏动作不能作为模仿目标。</li>
+  <li><strong>相比 video-first WAM，它可以提前停止。</strong> 动作优先设计让部署时能够跳过世界预测，避免每步都完整生成视频。</li>
+  <li><strong>value 不是抽象状态价值，而是动作条件进度。</strong> 同一观察下，不同候选动作会得到不同分数，因此更适合动作排序。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel rose"><h4>成功数据 WAM</h4><div class="sub">只见过好后果</div><div class="value">坏动作也可能被配上成功未来，value 对错误动作过度乐观。</div></div>
+    <div class="panel sky"><h4>失败动作模仿</h4><div class="sub">错误监督 policy</div><div class="value">知道失败发生了，但 action loss 会鼓励策略复制坏动作。</div></div>
+    <div class="panel mint"><h4>FACT</h4><div class="sub">模仿成功，理解失败</div><div class="value">好动作训练 policy；好坏动作都训练 future 和 value。</div></div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>RoboTwin 主实验覆盖 50 个任务。</strong> Clean 训练集含每任务 50 条、共 2,500 条示范；随机化训练集含每任务 500 条、共 25,000 条示范，另外加入约 1,300 条失败 rollout。</li>
+  <li><strong>每个主实验结果来自大量执行。</strong> 每个任务在 Clean 和随机化环境各测试 100 次，完整评估约为 50×2×100=10,000 次 rollout。</li>
+  <li><strong>视频训练和失败训练逐步提升成功率。</strong> 不预测视频时平均 81.8%；加入未来视频监督升至 85.6%；再加入失败后达到 87.5%。Clean/Rand 分别为 88.4%/86.6%。</li>
+  <li><strong>与最佳基线接近，但部署更快。</strong> Motus 平均成功率 87.8%，FACT 为 87.5%；论文在 RTX PRO 6000 上报告完整 FACT 路径约 380 ms，Motus 约 1220 ms。</li>
+  <li><strong>真实 seen 任务从 82% 提到 89%。</strong> 五个双臂任务每格评估 20 次；加 N=4 评分后进一步达到 92%。</li>
+  <li><strong>真实 unseen 任务从 67% 提到 77%。</strong> 在颜色、形状和指令变化的三种 held-out 任务上，可选评分达到 82%。</li>
+  <li><strong>失败未来预测大幅改善。</strong> 失败样本 PSNR 从 19.51 提到 25.92，成功样本则几乎不变：26.12 对 26.08。</li>
+</ul>
+
+<h2>RoboTwin scaling 实验怎么读</h2>
+<ul>
+  <li><strong>32.7%→57.3% 不是 50 任务主结果。</strong> 这是一组独立的 failure-data scaling 实验，只挑选 Handover Block、Open Microwave 和 Put Bottles Dustbin 三个 Clean 任务。</li>
+  <li><strong>唯一主动改变的是失败数据比例。</strong> p=0%、50%、100% 分别表示不使用、使用一半、使用全部可用失败 rollout；其余训练条件保持一致。</li>
+  <li><strong>全部加入时失败数据约占训练集 45%。</strong> 平均成功率随比例单调上升，从 32.7% 到 57.3%，说明收益没有在少量失败数据下迅速饱和。</li>
+  <li><strong>低数字不代表主模型退化。</strong> 三个任务更难，且训练子集和口径不同，因此 32.7% 不能直接与完整 50 任务的 85.6% 比较。</li>
+  <li><strong>这项实验支持相关性，而非完整因果结论。</strong> 它显示更多真实失败后果与更高成功率同步出现；论文没有穷尽失败类型、采样策略和额外训练步数等混杂因素。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>失败数据仍需要 rollout 和标注。</strong> 系统要知道 episode 是否失败，最好还能标记 failure onset；大规模采集并不免费。</li>
+  <li><strong>进度标签比较简单。</strong> 论文主要用随时间线性增长的进度，再施加失败惩罚；复杂任务可能需要更好的 learned progress estimator。</li>
+  <li><strong>best-of-N 用计算换可靠性。</strong> action-only 很快，但候选评分需要额外的 Stage 2 pass，N 越大延迟越高。</li>
+  <li><strong>实验集中在双臂桌面操作。</strong> 扩展到更长时程、移动操作、人机交互和开放世界失败仍需验证。</li>
+  <li><strong>未来视频质量仍受 backbone 限制。</strong> 更广泛的机器人和人类交互数据，可能进一步提升物理合理性与 value 的区分能力。</li>
+</ul>
+
+<h2>我的判断</h2>
+<ul>
+  <li><strong>最聪明的地方是重新定义失败数据。</strong> 失败动作不是行为标签，却是极有价值的因果后果标签；FACT 用 mask 把两者干净分开。</li>
+  <li><strong>它让 WAM 更接近真正的 world model。</strong> 只会想象成功的模型并不理解世界；能区分不同动作导致的好坏未来，才具备规划价值。</li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>

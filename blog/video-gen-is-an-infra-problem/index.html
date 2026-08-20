@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Why Video Gen Is an Infra Problem — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://research.nvidia.com/labs/eai/blogs/video-gen-is-an-infra-problem/" target="_blank" rel="noopener">Source</a></div>
+    <article class="readpaper-body">
+<h1>Why Video Gen Is an Infra Problem — 视频生成的下一道坎不是单个模型</h1>
+<p>这篇 NVIDIA 博客的主张很直接：视频生成正在从“模型能不能生成漂亮 demo”转向“系统能不能稳定、低延迟、低成本地生成长视频”。如果只看 denoiser FPS，会漏掉真正影响用户体验的部分：长时记忆、KV cache、VAE 解码、低精度推理、跨 GPU 并行、调度和端到端延迟。LongLive 2.0 被作者用作案例，说明视频生成需要训练和推理一起设计。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>视频生成第一阶段是能力展示。</strong> Sora 这类系统让大家看到长时长、高质量、多比例视频是可能的，重点是“能不能生成”。</li>
+  <li><strong>第二阶段变成复杂系统工程。</strong> 新目标包括多模态控制、可编辑、音画同步、低延迟和可部署，问题不再只是模型画面好不好。</li>
+  <li><strong>用户体验的是完整 pipeline。</strong> 用户不会只感受 DiT denoiser 的速度，而是感受从请求到像素出来的端到端时间。</li>
+  <li><strong>长视频会放大所有系统瓶颈。</strong> 60 秒视频不是六段 10 秒视频拼接；它需要记忆、同步、压缩、调度和错误控制。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>漂亮 demo 不等于可用系统。</strong> 单个样本能证明模型有能力，但真实使用要面对很多 prompt、长时长、多镜头、有限硬件和成本约束。</li>
+  <li><strong>长视频需要干净的记忆机制。</strong> 后续片段要保留角色、场景和运动连续性，但不能把早期帧的错误残影一直带下去。</li>
+  <li><strong>模型 FPS 会误导性能判断。</strong> DiT 变快后，VAE 解码、KV-cache 更新、显存搬运和同步开销会浮出水面。</li>
+  <li><strong>低精度不是单纯压缩。</strong> 在自回归视频里，量化误差会进入历史和 KV cache，继续影响未来片段，所以训练和推理格式必须对齐。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>视频生成是端到端基础设施问题。</strong> 好模型仍然重要，但它只是系统的一部分；系统还要负责记忆、解码、并行、压缩和交付像素。</li>
+  <li><strong>长视频生成是在线过程。</strong> 模型要一边生成新片段，一边维护历史信息，并决定哪些信息保留、刷新、压缩或丢弃。</li>
+  <li><strong>快不等于 denoiser 快。</strong> 真正的快是用户尽早看到像素，所以异步 VAE 解码、KV cache 管理和调度都算在速度里。</li>
+  <li><strong>训练和 serving 要一起设计。</strong> 如果训练时没有考虑 NVFP4、W4A4、KV cache 和 dequantization，部署时很容易出现质量或延迟问题。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>能力问题</h4>
+      <div class="sub">Can it generate?</div>
+      <div class="label">看什么</div>
+      <div class="value">单个漂亮样本、画质、运动感</div>
+      <div class="label">典型阶段</div>
+      <div class="value">短片 demo 和模型能力展示</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>进入真实使用</span></div>
+    <div class="panel mint">
+      <h4>复杂度问题</h4>
+      <div class="sub">Can it stay useful?</div>
+      <div class="label">看什么</div>
+      <div class="value">长时一致性、可控性、低延迟</div>
+      <div class="label">核心挑战</div>
+      <div class="value">记忆和错误会跨片段传播</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>系统化</span></div>
+    <div class="panel peach">
+      <h4>基础设施问题</h4>
+      <div class="sub">Can it deploy?</div>
+      <div class="label">看什么</div>
+      <div class="value">显存、吞吐、端到端延迟、成本</div>
+      <div class="label">结果</div>
+      <div class="value">模型和 runtime 共同决定体验</div>
+    </div>
+  </div>
+</div>
+
+<h2>系统怎么拆</h2>
+<ul>
+  <li><strong>Tokenizer / VAE 负责像素和 latent 互转。</strong> 生成模型通常不直接在像素上工作，而是在压缩后的 latent 空间里生成，再由 VAE 解码成视频。</li>
+  <li><strong>Denoising engine 仍是核心算子。</strong> DiT 或类似 denoiser 负责从噪声逐步还原视频 latent，但它不再是唯一瓶颈。</li>
+  <li><strong>Temporal memory 决定长时一致性。</strong> 长视频需要跨镜头记住角色、布局和运动，同时避免早期错误污染后续内容。</li>
+  <li><strong>Precision runtime 决定能不能便宜部署。</strong> NVFP4、W4A4、KV cache 压缩只有在 dequantization 足够快、质量足够稳时才真的有用。</li>
+  <li><strong>Parallel execution 和 scheduler 决定端到端延迟。</strong> 如果 VAE 解码能和后续 latent 生成异步重叠，用户会更早看到输出。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel sky">
+      <h4>生成核心</h4>
+      <div class="sub">denoiser / few-step generation</div>
+      <div class="value">负责把噪声变成视频 latent，是模型能力的中心部分。</div>
+    </div>
+    <div class="panel mint">
+      <h4>记忆核心</h4>
+      <div class="sub">KV cache / attention sinks</div>
+      <div class="value">负责保留跨片段上下文，让人物、场景和镜头连续。</div>
+    </div>
+    <div class="panel cream">
+      <h4>交付核心</h4>
+      <div class="sub">VAE / runtime / scheduler</div>
+      <div class="value">负责把 latent 快速变成像素，并控制显存、同步和吞吐。</div>
+    </div>
+  </div>
+</div>
+
+<h2>LongLive 2.0 这个案例</h2>
+<ul>
+  <li><strong>它把长视频当成一套 pipeline 优化。</strong> 博客把 LongLive 2.0 描述为同时处理训练、推理、低精度、KV cache 和异步解码的系统。</li>
+  <li><strong>长时长依赖自回归多镜头生成。</strong> 系统不是一次性生成所有帧，而是逐段生成并维护历史，让长视频更可控。</li>
+  <li><strong>一致性依赖 global-level 和 shot-level attention sinks。</strong> 这些机制帮助模型在不同镜头间保留该保留的信息，同时减少错误记忆。</li>
+  <li><strong>延迟依赖并行 dequantization 和异步 VAE 解码。</strong> 模型可以继续生成后续 latent，同时把前面 chunk 解码成视频。</li>
+  <li><strong>训练规模依赖 balanced sequence parallelism。</strong> 普通 sequence parallel 在 teacher forcing 下可能让 noisy target 和 loss 集中在一个 rank，造成计算不均衡。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel rose">
+      <h4>只优化单点</h4>
+      <div class="sub">fast denoiser only</div>
+      <div class="value">采样步数变少，但 VAE、KV cache、数据搬运或 GPU 同步可能接管尾延迟。</div>
+    </div>
+    <div class="panel mint">
+      <h4>端到端协同</h4>
+      <div class="sub">LongLive 2.0 style</div>
+      <div class="value">训练、低精度、cache、dequantization、VAE 解码和并行布局一起设计。</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它把评价问题从画质扩展到系统可用性。</strong> 博客提醒我们，真正的指标是长、快、稳、便宜，而不是单个视频 demo 是否惊艳。</li>
+  <li><strong>它强调端到端 latency 比模块 FPS 更重要。</strong> 对用户来说，收到像素的时间才是速度；模块 benchmark 可能隐藏真实瓶颈。</li>
+  <li><strong>它把低精度看成训练-推理一致性问题。</strong> NVFP4 这类格式如果只在推理后处理，可能破坏长视频历史；训练阶段就要适配。</li>
+  <li><strong>它把长视频 memory 当成基础设施。</strong> 记住什么、忘掉什么、压缩什么，不只是模型架构问题，也是 runtime 和 serving 问题。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>这是一篇观点博客，不是完整 benchmark 论文。</strong> 它给出系统视角和 LongLive 2.0 案例，但细节数字主要要看 LongLive 2.0 原论文。</li>
+  <li><strong>很多结论依赖具体硬件和实现。</strong> 异步 VAE、NVFP4、parallel dequantization 的收益会随 GPU、batch、视频长度和服务形态变化。</li>
+  <li><strong>系统组件之间有强耦合。</strong> 一个组件变快可能暴露下一个瓶颈，所以优化不能只看局部曲线。</li>
+  <li><strong>质量和效率的平衡仍然难。</strong> 低精度、KV cache 压缩、few-step distillation 都可能带来细节损失或长时漂移。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>它适合拿来判断视频生成项目成熟度。</strong> 如果一个系统只展示单段 demo，却不谈 memory、VAE、KV cache、latency 和 cost，就还停留在能力展示阶段。</li>
+  <li><strong>它预示视频生成会越来越像 infra 竞争。</strong> 后续差距可能来自低精度 runtime、并行策略、cache 设计和 serving pipeline，而不只是更大的 denoiser。</li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>

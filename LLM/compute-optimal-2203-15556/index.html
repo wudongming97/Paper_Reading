@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Training Compute-Optimal Large Language Models — Paper Reading</title>
+  <link rel="stylesheet" href="../../assets/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="site-brand" href="../../">
+        <span class="site-mark" aria-hidden="true">P</span>
+        <span>
+          <span class="site-logo">Paper Reading</span>
+          <span class="site-tagline">返回阅读列表</span>
+        </span>
+      </a>
+    </div>
+  </header>
+  <main>
+    <div class="article-links"><a href="https://arxiv.org/abs/2203.15556" target="_blank" rel="noopener">arXiv</a><a href="https://arxiv.org/pdf/2203.15556" target="_blank" rel="noopener">PDF</a></div>
+    <article class="readpaper-body">
+<h1>Training Compute-Optimal Large Language Models — Chinchilla 为什么说“大模型其实没训够”</h1>
+<p>这篇 DeepMind 论文重新回答了一个很贵的问题：给定固定训练算力，应该把预算花在更大的模型上，还是更多训练 token 上？论文训练了 400 多个 Transformer，覆盖 70M 到 16B+ 参数、5B 到 500B token，结论很直接：在算力最优点，模型参数量和训练 token 数应近似等比例增长。作者用 70B 参数、1.4T token 的 Chinchilla 验证这一点：它用和 Gopher 280B 相近的训练算力，却在大量任务上明显更强。</p>
+
+<h2>背景铺垫</h2>
+<ul>
+  <li><strong>语言模型训练有两个大旋钮。</strong> 一个是模型参数量 \(N\)，决定模型容量；另一个是训练 token 数 \(D\)，决定模型见过多少文本。训练算力 \(C\) 大致随 \(N\times D\) 增长。</li>
+  <li><strong>Kaplan scaling law 先给了“大模型优先”的直觉。</strong> 2020 年 OpenAI 的 scaling laws 认为固定算力下应更快扩大模型，并相对少增加数据。很多大模型因此维持约 300B token 训练量，只是不断把参数做大。</li>
+  <li><strong>“compute-optimal”是预算问题。</strong> 它不是问最大模型能多强，而是问在同样 FLOPs 下，哪个 \(N,D\) 组合能得到最低预训练损失。真实训练通常只能做一次，所以这个估计很关键。</li>
+  <li><strong>Chinchilla 是论文的验证模型。</strong> 作者预测 Gopher 训练预算下的最优模型应小 4 倍、数据多 4 倍，于是训练了 70B 参数、1.4T token 的 Chinchilla 来检验。</li>
+</ul>
+
+<h2>问题是什么</h2>
+<ul>
+  <li><strong>很多大模型可能“欠训练”。</strong> GPT-3、Jurassic-1、Gopher、MT-NLG 这些模型参数量很大，但训练 token 大多在约 270B 到 300B 左右。论文认为瓶颈已经转向数据。</li>
+  <li><strong>只看参数量会误导算力分配。</strong> 如果模型太大而数据太少，额外参数不能充分学习；如果模型稍小但看更多 token，可能用同样算力得到更低损失。</li>
+  <li><strong>学习率 schedule 也会影响结论。</strong> 作者指出 Kaplan 等早期分析用固定训练 token 和 schedule，可能高估短训练模型的损失。本文让 schedule 匹配训练 token 数，重新拟合。</li>
+  <li><strong>推理成本也是现实问题。</strong> 一个更小但训练更充分的模型，不只预训练更划算，部署、微调和推理也更便宜。Chinchilla 的 70B 比 Gopher 的 280B 更容易用。</li>
+</ul>
+
+<h2>核心想法</h2>
+<ul>
+  <li><strong>模型和数据应该一起长大。</strong> 论文的核心结论是：每当模型参数量翻倍，训练 token 数也应大致翻倍。这和“主要放大模型、数据慢慢加”的旧直觉不同。</li>
+  <li><strong>400 多个小模型先画出预算地图。</strong> 作者不直接猜 70B 的最佳训练量，而是训练许多小到中等规模模型，用它们的 loss 曲线外推大预算下的 \(N_{\mathrm{opt}}\) 和 \(D_{\mathrm{opt}}\)。</li>
+  <li><strong>三种估计方法互相校验。</strong> 论文分别从训练曲线包络、固定 FLOPs 下扫描模型大小、直接拟合 \(L(N,D)\) 三条路估计最优配比。三者都指向相近结论。</li>
+  <li><strong>真正的实验验证是 Chinchilla。</strong> 在 Gopher 级别的训练算力下，Chinchilla 选择更小模型和更多 token，并在 MMLU、BIG-bench、阅读理解、问答等任务上超过 Gopher。</li>
+</ul>
+
+<div class="diagram">
+  <div class="flow">
+    <div class="panel lavender">
+      <h4>旧训练路线</h4>
+      <div class="sub">参数越做越大</div>
+      <div class="label">典型例子</div>
+      <div class="value">GPT-3 175B / 300B token，Gopher 280B / 300B token</div>
+      <div class="label">隐含假设</div>
+      <div class="value">数据量不需要同步增长</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>重新拟合</span></div>
+    <div class="panel mint">
+      <h4>Chinchilla law</h4>
+      <div class="sub">参数和 token 等比例</div>
+      <div class="label">结论</div>
+      <div class="value">\(N_{\mathrm{opt}}\propto C^{0.5}\)，\(D_{\mathrm{opt}}\propto C^{0.5}\)</div>
+      <div class="label">含义</div>
+      <div class="value">模型翻倍，训练数据也翻倍</div>
+    </div>
+    <div class="arrow"><span class="glyph">→</span><span>验证</span></div>
+    <div class="panel peach">
+      <h4>Chinchilla</h4>
+      <div class="sub">70B 参数 / 1.4T token</div>
+      <div class="label">对比</div>
+      <div class="value">同等训练算力下超过 Gopher 280B</div>
+      <div class="label">额外好处</div>
+      <div class="value">推理和微调成本更低</div>
+    </div>
+  </div>
+</div>
+
+<h2>方法怎么做</h2>
+<ul>
+  <li><strong>方法一：看训练曲线的“下包络”。</strong> 对每个模型大小，作者训练不同 token 长度，再找同一 FLOPs 下最低 loss 的点。这个包络给出不同预算下最有效的模型大小和 token 数。</li>
+  <li><strong>方法二：固定 FLOPs 扫模型大小。</strong> 在 9 个固定 FLOPs 预算下，训练不同参数量的模型，然后看哪个模型 loss 最低。这个方法直接回答“同样预算下模型该多大”。</li>
+  <li><strong>方法三：直接拟合 loss 曲面。</strong> 作者拟合 \(L(N,D)=E+A/N^{\alpha}+B/D^{\beta}\)。这把模型不足和数据不足看成两个可叠加的损失来源。</li>
+  <li><strong>训练设置尽量匹配 token 长度。</strong> 论文强调学习率 cosine schedule 应和训练 token 数匹配，否则短训练模型会被不公平地估计得更差。</li>
+  <li><strong>FLOPs 约束连接 N 和 D。</strong> 训练预算固定时，更多参数意味着能看的 token 更少；更多 token 意味着模型必须更小。compute-optimal 就是在这条约束线上找最低 loss。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-3">
+    <div class="panel lavender">
+      <h4>Approach 1</h4>
+      <div class="sub">训练曲线包络</div>
+      <div class="value">从不同模型和不同训练长度中，取每个 FLOPs 点的最低 loss。</div>
+    </div>
+    <div class="panel mint">
+      <h4>Approach 2</h4>
+      <div class="sub">IsoFLOP 扫描</div>
+      <div class="value">固定算力预算，直接比较不同参数量的最终 loss。</div>
+    </div>
+    <div class="panel sky">
+      <h4>Approach 3</h4>
+      <div class="sub">拟合 \(L(N,D)\)</div>
+      <div class="value">用一个 loss 曲面同时描述模型容量瓶颈和数据瓶颈。</div>
+    </div>
+  </div>
+</div>
+
+<h2>新意在哪里</h2>
+<ul>
+  <li><strong>它修正了 Kaplan scaling law 的工程解读。</strong> Kaplan 的现象仍然重要，但本文认为固定算力下数据增长太慢会让模型欠训练。新结论更接近“模型和数据平衡增长”。</li>
+  <li><strong>它把“大模型竞赛”改成“token 预算竞赛”。</strong> 论文不是简单说小模型更好，而是说在给定预算下，参数和 token 的配比错了。很多 100B+ 模型当时都没有看够数据。</li>
+  <li><strong>它用强模型验证 scaling 预测。</strong> 只做小模型拟合还不够，作者真的训练了 70B Chinchilla，并和 Gopher、GPT-3、Jurassic-1、MT-NLG 等模型比较。</li>
+  <li><strong>它让推理成本进入 scaling 讨论。</strong> 同等训练预算下更小的模型如果更强，后续部署成本会显著下降。这对真实产品比单次训练 loss 更重要。</li>
+</ul>
+
+<div class="diagram">
+  <div class="grid-2">
+    <div class="panel rose">
+      <h4>旧答案：模型更大</h4>
+      <div class="sub">300B token 附近训练很多大模型</div>
+      <div class="value">优点是模型容量上去了；问题是数据没有同步增加，模型可能还没充分训练。</div>
+    </div>
+    <div class="panel cream">
+      <h4>新答案：更小但训更久</h4>
+      <div class="sub">70B 参数 + 1.4T token</div>
+      <div class="value">Chinchilla 用相似训练算力超过 Gopher，同时推理和微调更便宜。</div>
+    </div>
+  </div>
+</div>
+
+<h2>结果速览</h2>
+<ul>
+  <li><strong>MMLU 提升很明显。</strong> Chinchilla 5-shot 平均准确率为 67.6%，Gopher 为 60.0%，GPT-3 5-shot 为 43.9%。它还超过了当时对 2023 年 SOTA 的人类预测 63.4%。</li>
+  <li><strong>语言建模全面超过 Gopher。</strong> 在 The Pile 的各子集上，Chinchilla 都比 Gopher bits-per-byte 更低；WikiText103 perplexity 为 7.16，Gopher 为 7.75。</li>
+  <li><strong>阅读理解和问答也更强。</strong> LAMBADA 上 Chinchilla 为 77.4%，Gopher 为 74.5%；RACE-h 和 RACE-m 上提升超过 10 个百分点。</li>
+  <li><strong>BIG-bench 大多数任务获益。</strong> 论文报告 Chinchilla 在 Gopher 使用过的一组 BIG-bench 任务上，绝大多数任务都有提升。</li>
+  <li><strong>安全相关结果没有自动解决。</strong> Winogender 上 Chinchilla 更准，但不同性别组提升不均；无提示毒性生成和 Gopher 差异很小，说明更低 loss 不等于风险自然消失。</li>
+</ul>
+
+<h2>局限与开放问题</h2>
+<ul>
+  <li><strong>数据质量成为新瓶颈。</strong> 等比例增加 token 听起来简单，但高质量、去重、覆盖广的数据并不无限。越往后，数据工程会越来越重要。</li>
+  <li><strong>结论主要针对 dense Transformer。</strong> MoE、检索增强模型、多模态模型、长上下文模型可能有不同的最优配比。本文不直接覆盖这些架构。</li>
+  <li><strong>预训练 loss 不是全部能力。</strong> 论文展示很多下游任务提升，但对齐、工具使用、推理链、安全性等能力不能只靠 loss 曲面完全预测。</li>
+  <li><strong>外推仍有风险。</strong> 400 多个模型给了很强证据，但从 16B 以内外推到 70B 甚至更大模型，仍依赖幂律假设在更高预算下继续成立。</li>
+  <li><strong>评估可能受数据泄漏影响。</strong> 作者也提醒，Chinchilla 看了 4 倍数据，语言建模 benchmark 上可能更容易碰到训练/测试重叠，因此 MMLU、BIG-bench 等更值得重视。</li>
+</ul>
+
+<h2>影响</h2>
+<ul>
+  <li><strong>“Chinchilla-optimal”成了训练配比常用词。</strong> 后续 LLM 训练常用它来讨论参数量和 token 数是否平衡，尤其是判断模型是否 undertrained。</li>
+  <li><strong>它推动了更数据密集的预训练路线。</strong> 之后很多模型不再只追求参数变大，而是把训练 token 拉到万亿级甚至更多。大模型训练从“多大”转向“多大、训多少、数据多好”。</li>
+</ul>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    </article>
+  </main>
+</body>
+</html>
